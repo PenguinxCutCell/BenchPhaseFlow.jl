@@ -4,7 +4,6 @@ using LinearAlgebra
 using SparseArrays
 using CSV
 using Test
-using CairoMakie
 
 """
 Transient diffusion benchmark on two disconnected circular domains (inner disk
@@ -83,19 +82,6 @@ function run_two_ring_diffusion(nx_list::Vector{Int};
         solver = DiffusionUnsteadyMono(phase, bc_b, bc, Δt, u0, "CN")
         solve_DiffusionUnsteadyMono!(solver, phase, Δt, params.Tend, bc_b, bc, "CN"; method=Base.:\)
 
-        # Debut plot
-        fig = Figure(resolution = (800, 400))
-        ax1 = Axis(fig[1, 1], title = "Numerical Solution at t=$(params.Tend)", xlabel = "x", ylabel = "y")
-        unum = reshape(solver.x[1:ndofs], (nx+1, nx+1))
-        heatmap!(ax1, mesh.nodes[1], mesh.nodes[2], unum'; colormap = :viridis)
-        ax2 = Axis(fig[1, 2], title = "Exact Solution at t=$(params.Tend)", xlabel = "x", ylabel = "y")
-        uexact = [φ_exact(mesh.nodes[1][i], mesh.nodes[2][j], params.Tend, params)
-                  for j in 1:nx+1 for i in 1:nx+1]
-        uexact_mat = reshape(uexact, (nx+1, nx+1))
-        heatmap!(ax2, mesh.nodes[1], mesh.nodes[2], uexact_mat'; colormap = :viridis)
-        
-        display(fig)
-        readline()
 
         _, _, global_err, full_err, cut_err, empty_err =
             check_convergence((x, y) -> φ_exact(x, y, params.Tend, params), solver, capacity, norm, relative)

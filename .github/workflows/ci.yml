@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+
+      - uses: julia-actions/cache@v1
+        with:
+          cache-compiled: true
+
+      - uses: julia-actions/julia-buildpkg@v1
+
+      - uses: julia-actions/julia-runtest@v1
+
+      - name: Run benchmark problem scripts
+        run: julia --project scripts/run_all_problems.jl
+
+      - name: Build docs
+        run: |
+          julia --project=docs -e 'using Pkg; Pkg.instantiate()'
+          julia --project=docs docs/make.jl
