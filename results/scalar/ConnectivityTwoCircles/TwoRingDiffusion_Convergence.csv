@@ -1,0 +1,2 @@
+method,h,lp_norm,inside_cells,inside_cells_by_dim,all_err,full_err,cut_err,empty_err,pair_order_all,pair_order_full,pair_order_cut
+TwoRingDiffusion,0.03125,L^2,3104,[3104],0.3606358717726995,0.34819986934531966,0.0938886734231419,0.0,NaN,NaN,NaN

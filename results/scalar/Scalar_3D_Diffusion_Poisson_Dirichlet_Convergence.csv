@@ -1,0 +1,5 @@
+method,h,lp_norm,inside_cells,inside_cells_by_dim,all_err,full_err,cut_err,empty_err
+Scalar_3D_Diffusion_Poisson_Dirichlet_Convergence,0.5,L^2,1,"[2, 2, 2]",0.011799126808298721,0.005909990432525789,0.010212316413320106,0.0
+Scalar_3D_Diffusion_Poisson_Dirichlet_Convergence,0.25,L^2,7,"[4, 4, 4]",0.0007138230826305663,0.0004577225537305956,0.0005477530986699633,0.0
+Scalar_3D_Diffusion_Poisson_Dirichlet_Convergence,0.125,L^2,147,"[8, 8, 8]",0.00027247849633724104,0.0001571682100875284,0.0002225818606807086,0.0
+Scalar_3D_Diffusion_Poisson_Dirichlet_Convergence,0.0625,L^2,1599,"[16, 16, 16]",6.90081725111423e-5,4.386536931874827e-5,5.327248114981506e-5,0.0
