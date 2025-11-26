@@ -4,7 +4,6 @@ using LinearAlgebra
 using SparseArrays
 using CSV
 using Test
-using CairoMakie
 
 const JOHANSEN_COLELLA_DIR = @__DIR__
 include(joinpath(JOHANSEN_COLELLA_DIR, "common.jl"))

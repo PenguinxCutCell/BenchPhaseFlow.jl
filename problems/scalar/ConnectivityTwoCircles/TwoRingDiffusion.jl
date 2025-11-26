@@ -122,7 +122,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing, params::TwoRingParams=TwoRingParams())
-    nx_vals = isnothing(nx_list) ?  [64] : nx_list
+    nx_vals = isnothing(nx_list) ?  [16, 32, 64] : nx_list
     data = run_two_ring_diffusion(nx_vals; params=params)
     csv_info = write_convergence_csv("TwoRingDiffusion", data; csv_path=csv_path)
     return (data = data, csv_path = csv_info.csv_path, table = csv_info.table)

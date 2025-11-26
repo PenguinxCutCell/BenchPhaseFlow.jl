@@ -13,7 +13,7 @@ and the outer box.
 NOTE : THIS SCRIPT CURRENTLY NOT WORKING
 """
 
-const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
+const BENCH_ROOT = normpath(joinpath(@__DIR__, "..","..", "..", ".."))
 include(joinpath(BENCH_ROOT, "utils", "convergence.jl"))
 
 r_initial() = 0.392
@@ -30,6 +30,8 @@ function source_term(x,y,z,t)
     r2 = x^2 + y^2 + z^2
     return 4.0 * (r2 + 5 * (t + 1)) / (125π * (t + 1)^3) * exp(-r2 / (5 * (t + 1)))
 end
+source_term(x, y, z, t_cell, t_eval) = source_term(x, y, z, t_eval)
+
 
 function run_expanding_sphere_convergence(
     nx_list::Vector{Int},
@@ -51,12 +53,13 @@ function run_expanding_sphere_convergence(
 
     for (nx, ny, nz) in zip(nx_list, ny_list, nz_list)
         mesh = Penguin.Mesh((nx, ny, nz), (lx, ly, lz), (0.0, 0.0, 0.0))
-        Δt = 0.25 * min((lx / nx)^2, (ly / ny)^2, (lz / nz)^2)
+        Δt = 0.5 * min((lx / nx)^2, (ly / ny)^2, (lz / nz)^2)
         Tstart = Δt
 
         body = expanding_body(center)
         st_mesh = Penguin.SpaceTimeMesh(mesh, [0.0, Δt])
-        capacity = Capacity(body, st_mesh)
+        capacity = Capacity(body, st_mesh; method="VOFI", integration_method=:vofijul, compute_centroids=true)
+        println(capacity.C_γ)
         operator = DiffusionOps(capacity)
 
         bc = Dirichlet((x,y,z,t)->a_exact(x,y,z,t))
@@ -66,7 +69,7 @@ function run_expanding_sphere_convergence(
             :front=>bc, :back=>bc
         ))
         interface_bc = Dirichlet((x,y,z,t)->a_exact(x,y,z,t))
-        phase = Phase(capacity, operator, source_term, (x,y,z)->1.0)
+        phase = Phase(capacity, operator, source_term, (x,y,z,t)->1.0)
 
         ndofs = (nx + 1)*(ny + 1)*(nz + 1)
         u0ₒ = [a_exact(mesh.nodes[1][i], mesh.nodes[2][j], mesh.nodes[3][k], Tstart)
@@ -76,7 +79,7 @@ function run_expanding_sphere_convergence(
         u0 = vcat(u0ₒ, u0ᵧ)
 
         solver = MovingDiffusionUnsteadyMono(phase, bc_b, interface_bc, Δt, u0, mesh, "BE")
-        solve_MovingDiffusionUnsteadyMono!(solver, phase, body, Δt, Tstart, Tend, bc_b, interface_bc, mesh, "BE"; method=Base.:\)
+        solve_MovingDiffusionUnsteadyMono!(solver, phase, body, Δt, Tstart, Tend, bc_b, interface_bc, mesh, "BE"; method=Base.:\, geometry_method="VOFI", integration_method=:vofijul, compute_centroids=true)
 
         R_tend = r_initial() + Tend
         body_tend = (x,y,z,_=0)->sqrt((x-center[1])^2 + (y-center[2])^2 + (z-center[3])^2) - R_tend
@@ -121,7 +124,7 @@ end
 
 function main(; csv_path=nothing, nx_list=nothing, ny_list=nothing, nz_list=nothing)
     center = center_default()
-    nx_vals = isnothing(nx_list) ? [8, 12, 16] : nx_list
+    nx_vals = isnothing(nx_list) ? [4, 8, 12, 16] : nx_list
     ny_vals = isnothing(ny_list) ? nx_vals : ny_list
     nz_vals = isnothing(nz_list) ? nx_vals : nz_list
     Tend = 0.1
