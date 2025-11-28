@@ -15,7 +15,7 @@ The runner automatically discovers every `problems/**/*.jl` file, spawns a fresh
 
 ## Directory structure
 
-- `problems/`: benchmark definitions grouped by physics category
+- `problems/`: benchmark definitions grouped by physics category (e.g. `scalar`, `NavierStokes`, `NavierStokesCoupled`, `conditionning`)
 - `results/`: CSV convergence tables (overwritten on each run)
 - `src/`, `utils/`, `test/`: helper code that backs the benchmark utilities
 - `scripts/run_all_problems.jl`: convenience driver for CI and local automation
@@ -38,4 +38,3 @@ julia --project=docs -e 'using Pkg; Pkg.instantiate(); include("docs/make.jl")'
 ```
 
 By default the site reads the CSVs present in `results/`. If you want to use the read-only snapshots from the `benchmark-results` branch, check out that branch in a temporary directory and copy its `results/` folder into your working tree before running the command above.
-
