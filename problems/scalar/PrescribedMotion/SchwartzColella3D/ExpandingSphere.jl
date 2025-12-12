@@ -10,7 +10,7 @@ using Test
 The analytic solution and source term are identical to the fixed case; the radius
 grows with time while Dirichlet data track the exact field on the moving boundary
 and the outer box.
-NOTE : THIS SCRIPT CURRENTLY NOT WORKING
+NOTE : MUST USE IMPLICITINTEGRATION FOR CENTROID SURFACE
 """
 
 const BENCH_ROOT = normpath(joinpath(@__DIR__, "..","..", "..", ".."))
@@ -124,7 +124,7 @@ end
 
 function main(; csv_path=nothing, nx_list=nothing, ny_list=nothing, nz_list=nothing)
     center = center_default()
-    nx_vals = isnothing(nx_list) ? [4, 8, 12, 16] : nx_list
+    nx_vals = isnothing(nx_list) ? [4, 8, 12, 16, 24, 32] : nx_list
     ny_vals = isnothing(ny_list) ? nx_vals : ny_list
     nz_vals = isnothing(nz_list) ? nx_vals : nz_list
     Tend = 0.1

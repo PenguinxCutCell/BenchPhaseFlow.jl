@@ -25,6 +25,7 @@ Accompagnied by various boundary conditions such as Dirichlet, Neumann, Traction
 - Oscillatory Channel Flow : `OscillatoryChannel_2D_Mono.jl`
 - Lid-Driven Cavity Flow : `LidDrivenCavity_2D_Ghia.jl`
 - Kovasznay Flow : `Kovasznay_2D_Mono.jl`
+- 3D Stokes Flow around a Sphere : `Stokes_3D_Sphere.jl`
 - 2D Flow Past a Cylinder : `CylinderWake_Steady.jl`, `CylinderWake_ReSweep.jl`, `CylinderRe100_2D_Unsteady.jl`
 - Couette Cylindrical Flow : `CouetteCylinder_2D_Stokes.jl`
 - Backward Facing Step Flow : `BackwardFacingStep_Steady.jl`

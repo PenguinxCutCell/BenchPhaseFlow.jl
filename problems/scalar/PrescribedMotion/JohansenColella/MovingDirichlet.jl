@@ -4,6 +4,8 @@ using LinearAlgebra
 using SparseArrays
 using CSV
 using Test
+using CairoMakie
+using DataFrames
 
 const JOHANSEN_COLELLA_DIR = @__DIR__
 include(joinpath(JOHANSEN_COLELLA_DIR, "common.jl"))
@@ -43,7 +45,7 @@ function run_moving_dirichlet_convergence(
         Tstart = Δt
 
         st_mesh = Penguin.SpaceTimeMesh(mesh, [0.0, Δt])
-        capacity = Capacity(body, st_mesh)
+        capacity = Capacity(body, st_mesh; method="VOFI", integration_method=:vofijul)
         operator = DiffusionOps(capacity)
 
         bc = Dirichlet((x,y,t)->φ_exact(x,y,t))
@@ -58,7 +60,7 @@ function run_moving_dirichlet_convergence(
         u0 = vcat(u0ₒ, u0ᵧ)
 
         solver = MovingDiffusionUnsteadyMono(phase, bc_b, interface_bc, Δt, u0, mesh, "BE")
-        solve_MovingDiffusionUnsteadyMono!(solver, phase, body, Δt, Tstart, Tend, bc_b, interface_bc, mesh, "BE"; method=Base.:\)
+        solve_MovingDiffusionUnsteadyMono!(solver, phase, body, Δt, Tstart, Tend, bc_b, interface_bc, mesh, "BE"; method=Base.:\, geometry_method="VOFI", integration_method=:vofijul)
 
         body_tend = (x,y,_=0)->body(x,y,Tend)
         capacity_tend = Capacity(body_tend, mesh; compute_centroids=false)
@@ -103,7 +105,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing, ny_list=nothing)
-    nx_vals = isnothing(nx_list) ? [4, 9, 16, 33] : nx_list
+    nx_vals = isnothing(nx_list) ? [4, 9, 16, 33, 63, 127] : nx_list
     ny_vals = isnothing(ny_list) ? nx_vals : ny_list
     Tend = 0.1
 

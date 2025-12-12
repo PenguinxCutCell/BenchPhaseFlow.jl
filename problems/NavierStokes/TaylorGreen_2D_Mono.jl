@@ -24,7 +24,6 @@ const k = 1.0
 const ν = μ / ρ
 
 const t_end = 0.1
-const Δt = 0.001
 const scheme = :CN  # Crank–Nicolson for viscous terms
 
 u_exact(x, y, t) =  sin(k * x) * cos(k * y) * exp(-2.0 * ν * k^2 * t)
@@ -46,6 +45,7 @@ function run_taylor_green(ns::Vector{Int})
         mesh_p  = Penguin.Mesh((nx, ny), (Lx, Ly), (x0, y0))
         dx = mesh_p.nodes[1][2] - mesh_p.nodes[1][1]
         dy = mesh_p.nodes[2][2] - mesh_p.nodes[2][1]
+        Δt = 0.25 * min(dx, dy)
         mesh_ux = Penguin.Mesh((nx, ny), (Lx, Ly), (x0 - 0.5 * dx, y0))
         mesh_uy = Penguin.Mesh((nx, ny), (Lx, Ly), (x0, y0 - 0.5 * dy))
 
@@ -209,7 +209,7 @@ function write_results_csv(data; csv_path=nothing)
     return csv_file
 end
 
-function main(; ns=[8, 16, 32, 64], csv_path=nothing)
+function main(; ns=[8, 16, 32, 64, 128, 256], csv_path=nothing)
     data = run_taylor_green(ns)
     csv_file = write_results_csv(data; csv_path=csv_path)
     return (data=data, csv_path=csv_file)
