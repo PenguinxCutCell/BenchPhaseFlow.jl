@@ -20,6 +20,6 @@ else
     @warn "`utils/convergence.jl` not found. Some helper functions will be unavailable until that file exists." path=_utils_path
 end
 
-export count_inside_cells, compute_orders, compute_pairwise_orders, make_convergence_dataframe, make_diphasic_convergence_dataframe
+export count_inside_cells, compute_orders, compute_pairwise_orders, make_convergence_dataframe, make_diphasic_convergence_dataframe, check_h1_convergence
 
 end # module

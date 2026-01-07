@@ -50,7 +50,7 @@ function run_poisson3d_convergence(
 
     for (nx, ny, nz) in zip(nx_list, ny_list, nz_list)
         mesh = Penguin.Mesh((nx, ny, nz), (lx, ly, lz), (0.0, 0.0, 0.0))
-        capacity = Capacity(body, mesh; method="VOFI")
+        capacity = Capacity(body, mesh; method="VOFI", integration_method=:vofijul, compute_centroids=true)
         operator = DiffusionOps(capacity)
 
         bc_outer = Dirichlet(0.0)

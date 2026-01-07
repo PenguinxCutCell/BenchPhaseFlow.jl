@@ -3,6 +3,8 @@ using IterativeSolvers
 using LinearAlgebra
 using SparseArrays
 using CSV
+using GLMakie
+using CairoMakie
 using DataFrames
 using Test
 
@@ -67,6 +69,36 @@ function overshoot_metrics(solver, capacity, nx::Int, ny::Int)
     )
 end
 
+function plot_flower_3d(solver, mesh, capacity)
+    # Build grid from mesh nodes
+    xs = mesh.nodes[1]
+    ys = mesh.nodes[2]
+    nxp = length(xs)
+    nyp = length(ys)
+
+    ndofs = nxp * nyp
+    vals = solver.x[1:ndofs]
+
+    # reshape to (ny, nx) for plotting
+    Z = reshape(vals, (nxp, nyp))'
+
+    # force interior flower cells to value = 1.0 for visualization
+    if length(capacity.cell_types) == ndofs
+        mask = reshape(capacity.cell_types, (nxp, nyp))'
+        Z[mask .== 0] .= 1.0
+    end
+
+    xs_r = xs[1:end-1]
+    ys_r = ys[1:end-1]
+    Z_r = Z[1:end-1, 1:end-1]
+    fig = Figure(resolution = (900,600))
+    ax = Axis3(fig[1,1], title = "Numerical field", xlabel="x", ylabel="y", zlabel="Numerical Value")
+    s = surface!(ax, xs_r, ys_r, Z_r, colormap = :viridis)
+    Colorbar(fig[1,2], s, label = "Value")
+    display(fig)
+    return fig
+end
+
 function run_flower_study(nx_list::Vector{Int})
     stats = Vector{NamedTuple}(undef, length(nx_list))
     for (i, nx) in enumerate(nx_list)
@@ -100,3 +132,10 @@ results = main()
     max_vals = [stat.max_value for stat in results.stats]
     @test maximum(max_vals) <= 1.1
 end
+
+# Plot solution for the finest mesh
+nx_fine = 512
+solver, capacity = solve_flower(nx_fine, nx_fine)
+mesh = Penguin.Mesh((nx_fine, nx_fine), (1.0, 1.0), (0.0, 0.0))
+fig = plot_flower_3d(solver, mesh, capacity)
+save("JohansenColella_P3_FlowerSolution3D.png", fig)

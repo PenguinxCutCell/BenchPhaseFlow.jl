@@ -12,8 +12,10 @@ Diphasic 1D heat diffusion with a prescribed interface offset.
 This variant controls the interface location so that its distance to the nearest
 mesh face stays at a fixed fraction `θ` of `Δx` for every resolution, avoiding
 cases where the interface lands exactly on a face and causes oscillatory
-convergence. The offset is enforced by setting `x_int = x_face - θ * Δx` for the
-face closest to the nominal interface location.
+convergence. The offset is enforced by setting `x_int = (k + θ) * Δx` for the
+cell index `k` just to the left of the nominal interface location. A
+`theta_override` keyword lets
+you scan multiple offsets without rebuilding parameter structs.
 """
 const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
 include(joinpath(BENCH_ROOT, "utils", "convergence.jl"))
@@ -32,21 +34,25 @@ end
 Heat2PhThetaParams(;
     lx=8.0,
     x0=0.0,
-    xint_nominal=4.0,
+    xint_nominal=2.2,
     Tend=0.1,
-    He=100.0,
+    He=1.0,
     D1=1.0,
     D2=1.0,
-    theta=0.01
+    theta=0.0
 ) = Heat2PhThetaParams(lx, x0, xint_nominal, Tend, He, D1, D2, theta)
 
 function interface_location(params::Heat2PhThetaParams, nx::Int)
     dx = params.lx / nx
-    # Face index nearest to the nominal interface position
-    face_idx = clamp(round(Int, (params.xint_nominal - params.x0) / dx), 0, nx)
-    xf = params.x0 + face_idx * dx
-    xint = xf - params.theta * dx
-    return (xint=xint, xf=xf, dx=dx)
+    θ = params.theta
+    0.0 <= θ < 1.0 || error("theta must satisfy 0 <= theta < 1, got $θ")
+
+    # Place the interface at (k + θ) * Δx near the nominal target.
+    k = clamp(floor(Int, (params.xint_nominal - params.x0) / dx), 0, nx - 1)
+    xint = params.x0 + (k + θ) * dx
+    xf_left = params.x0 + k * dx
+    xf_right = params.x0 + (k + 1) * dx
+    return (xint=xint, xf_left=xf_left, xf_right=xf_right, dx=dx)
 end
 
 function heat_phase1_solution(params::Heat2PhThetaParams, xint::Float64)
@@ -71,10 +77,24 @@ function run_heat_2ph_1d_theta(
     nx_list::Vector{Int};
     params::Heat2PhThetaParams=Heat2PhThetaParams(),
     norm::Real=2,
-    relative::Bool=false
+    relative::Bool=false,
+    theta_override::Union{Nothing,Float64}=nothing
 )
+    p = theta_override === nothing ? params :
+        Heat2PhThetaParams(;
+            lx=params.lx,
+            x0=params.x0,
+            xint_nominal=params.xint_nominal,
+            Tend=params.Tend,
+            He=params.He,
+            D1=params.D1,
+            D2=params.D2,
+            theta=theta_override
+        )
+
     h_vals = Float64[]
     dt_vals = Float64[]
+    xint_vals = Float64[]
     err_vals = Float64[]
     err_full_vals = Float64[]
     err_cut_vals = Float64[]
@@ -93,11 +113,11 @@ function run_heat_2ph_1d_theta(
     inside_cells_phase2 = Int[]
 
     for nx in nx_list
-        loc = interface_location(params, nx)
-        u1_exact = heat_phase1_solution(params, loc.xint)
-        u2_exact = heat_phase2_solution(params, loc.xint)
+        loc = interface_location(p, nx)
+        u1_exact = heat_phase1_solution(p, loc.xint)
+        u2_exact = heat_phase2_solution(p, loc.xint)
 
-        mesh = Penguin.Mesh((nx,), (params.lx,), (params.x0,))
+        mesh = Penguin.Mesh((nx,), (p.lx,), (p.x0,))
         body = (x, _=0) -> x - loc.xint
         body_c = (x, _=0) -> loc.xint - x
         capacity1 = Capacity(body, mesh)
@@ -111,30 +131,31 @@ function run_heat_2ph_1d_theta(
         ))
 
         ic = InterfaceConditions(
-            ScalarJump(1.0, params.He, 0.0),
+            ScalarJump(1.0, p.He, 0.0),
             FluxJump(1.0, 1.0, 0.0)
         )
 
         f_zero = (x, y, z, t) -> 0.0
-        D1_func = (x, y, z) -> params.D1
-        D2_func = (x, y, z) -> params.D2
+        D1_func = (x, y, z) -> p.D1
+        D2_func = (x, y, z) -> p.D2
 
         phase1 = Phase(capacity1, operator1, f_zero, D1_func)
         phase2 = Phase(capacity2, operator2, f_zero, D2_func)
 
         ndofs = nx + 1
         u0 = vcat(zeros(ndofs), zeros(ndofs), ones(ndofs), ones(ndofs))
-        Δt = 0.5 * (params.lx / nx)^2
+        Δt = 0.5 * (p.lx / nx)^2
         push!(dt_vals, Δt)
+        push!(xint_vals, loc.xint)
 
         solver = DiffusionUnsteadyDiph(phase1, phase2, bc_b, ic, Δt, u0, "CN")
-        solve_DiffusionUnsteadyDiph!(solver, phase1, phase2, Δt, params.Tend, bc_b, ic, "CN"; method=Base.:\)
+        solve_DiffusionUnsteadyDiph!(solver, phase1, phase2, Δt, p.Tend, bc_b, ic, "CN"; method=Base.:\)
         push!(solver.states, solver.x)
 
         _, _, global_errs, full_errs, cut_errs, empty_errs =
             check_convergence_diph(u1_exact, u2_exact, solver, capacity1, capacity2, norm, relative)
 
-        push!(h_vals, params.lx / nx)
+        push!(h_vals, p.lx / nx)
         push!(err_vals, global_errs[3])
         push!(err_full_vals, full_errs[3])
         push!(err_cut_vals, cut_errs[3])
@@ -175,6 +196,7 @@ function run_heat_2ph_1d_theta(
         inside_cells_by_dim = inside_cells_by_dim,
         inside_cells_phase1 = inside_cells_phase1,
         inside_cells_phase2 = inside_cells_phase2,
+        xint_vals = xint_vals,
         orders = compute_orders(h_vals, err_vals, err_full_vals, err_cut_vals),
         norm = norm
     )

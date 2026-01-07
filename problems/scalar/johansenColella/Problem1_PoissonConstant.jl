@@ -126,7 +126,7 @@ end
 
 function main(; csv_path=nothing, nx_list=nothing, ny_list=nothing)
     center = center_default()
-    nx_vals = isnothing(nx_list) ? [16, 32, 64, 128, 256] : nx_list
+    nx_vals = isnothing(nx_list) ? [16, 32, 64, 128, 256, 512] : nx_list
     ny_vals = isnothing(ny_list) ? nx_vals : ny_list
     u_exact = (x,y) -> exact_phi(x,y,center)
 
@@ -155,3 +155,78 @@ results = main()
     @test isfile(results.csv_path)
     println(orders)
 end
+
+
+# Using cairomakie, plot the solution and the error on the finest mesh
+using CairoMakie
+function plot_solutionn(solver, mesh, body::Function, capacity; state_i=1)
+   
+    # Use check_convergence to obtain analytical and numerical cell-centered fields
+    u_ana, u_num, _, _, _, _ = check_convergence((x,y)->exact_phi(x,y), solver, capacity)
+
+    # Mask inactive cells (empty cells) using capacity.cell_types
+    cell_types = capacity.cell_types
+    u_num_promasked = copy(u_num)
+    u_ana_promasked = copy(u_ana)
+    u_num_promasked[cell_types .== 0] .= NaN
+    u_ana_promasked[cell_types .== 0] .= NaN
+
+    # Prepare plotting grid and reshape arrays to (ny, nx) as used by heatmap
+    xg = mesh.nodes[1]
+    yg = mesh.nodes[2]
+    nx_plot = length(xg)
+    ny_plot = length(yg)
+
+
+    sol_grid = reshape(u_num_promasked, (nx_plot, ny_plot))'
+    ana_grid = reshape(u_ana_promasked, (nx_plot, ny_plot))'
+    err_grid = sol_grid .- ana_grid
+
+    # Solution figure
+    fig_sol = Figure(resolution=(500,400))
+    ax1 = Axis(fig_sol[1,1], title="Solution (numerical)", xlabel="x", ylabel="y", aspect=DataAspect())
+    hm1 = heatmap!(ax1, xg, yg, sol_grid, colormap = :viridis)
+    Colorbar(fig_sol[1,2], hm1, label = "Value")
+    display(fig_sol)
+    save("johansen_colella_problem1_solution.png", fig_sol)
+
+    # Error figure (separate)
+    fig_err = Figure(resolution=(500,400))
+    ax3 = Axis(fig_err[1,1], title="Error (numerical - analytical)", xlabel="x", ylabel="y", aspect=DataAspect())
+    hm3 = heatmap!(ax3, xg, yg, err_grid, colormap = :viridis)
+    Colorbar(fig_err[1,2], hm3, label = "Error")
+    display(fig_err)
+
+    # Log error figure (separate)
+    fig_logerr = Figure(resolution=(500,400))
+    ax4 = Axis(fig_logerr[1,1], title="Log10 Error Magnitude", xlabel="x", ylabel="y", aspect=DataAspect())
+    log_err_grid = log10.(abs.(err_grid))
+    hm4 = heatmap!(ax4, xg, yg, log_err_grid, colormap = :viridis)
+    Colorbar(fig_logerr[1,2], hm4, label = "Log10 |Error|")
+    display(fig_logerr)
+    save("johansen_colella_problem1_log_error.png", fig_logerr)
+end
+function plot_solution_and_error(; nx=512, ny=512, center=center_default())
+    lx = 1.0
+    ly = 1.0
+    mesh = Penguin.Mesh((nx, ny), (lx, ly), (0.0, 0.0))
+    capacity = Capacity(star_level_set, mesh; method="ImplicitIntegration")
+    operator = DiffusionOps(capacity) 
+    bc_outer = Dirichlet(0.0)
+    bc_b = BorderConditions(Dict(
+        :left   => bc_outer,
+        :right  => bc_outer,
+        :top    => bc_outer,
+        :bottom => bc_outer
+    ))
+    phase = Phase(capacity, operator,
+        (x,y,_)->forcing_problem1(x,y,center),
+        (x,y,_)->1.0
+    )
+    solver = DiffusionSteadyMono(phase, bc_b, Dirichlet((x,y,_=0)->exact_phi(x,y,center)))
+    solve_DiffusionSteadyMono!(solver; method=Base.:\)
+    
+    plot_solutionn(solver, mesh, star_level_set, capacity)
+end
+
+plot_solution_and_error()

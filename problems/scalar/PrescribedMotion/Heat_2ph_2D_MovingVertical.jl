@@ -31,7 +31,7 @@ end
 
 MovingVerticalParams(; lx=4.0, ly=4.0, x0=0.0, y0=0.0, Tend=0.1,
                     D_plus=1.0, D_minus=1.0, cp_plus=1.0, cp_minus=1.0,
-                    s0=2.0, A=0.1, ω=2π) = MovingVerticalParams(
+                    s0=2.0, A=0.1, ω=32π) = MovingVerticalParams(
     lx, ly, x0, y0, Tend, D_plus, D_minus, cp_plus, cp_minus, s0, A, ω
 )
 
@@ -230,7 +230,7 @@ end
 function main(; csv_path=nothing, nx_list=nothing, params::MovingVerticalParams=MovingVerticalParams())
     nx_vals = isnothing(nx_list) ? [4, 8, 16, 32, 64, 128] : nx_list
     data = run_moving_vertical_convergence(nx_vals; params=params)
-    csv_info = write_convergence_csv("Heat_2ph_2D_MovingVertical", data; csv_path=csv_path)
+    csv_info = write_convergence_csv("Heat_2ph_2D_MovingVertical_$(params.ω)", data; csv_path=csv_path)
     return (data=data, csv_path=csv_info.csv_path, table=csv_info.table)
 end
 

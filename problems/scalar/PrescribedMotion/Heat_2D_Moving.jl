@@ -12,6 +12,7 @@ Scalar 2D heat equation with an oscillating circular interface. The radius
 oscillates periodically, and the exact solution is imposed on the moving
 boundary. This script performs a mesh convergence study and writes a CSV
 summary without producing plots or timestamped folders.
+# Might need to adjust interface centroid computation for moving bodies : bary_interface vs compute_interface_centroid()
 """
 
 const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
@@ -130,7 +131,7 @@ function main(; csv_path=nothing, nx_list=nothing, ny_list=nothing)
     nx_vals = isnothing(nx_list) ? [4, 8, 16, 32, 64, 128] : nx_list
     ny_vals = isnothing(ny_list) ? nx_vals : ny_list
     r_mean = 1.0
-    r_amp = 0.5
+    r_amp = 1.0
     period = 1.0
     center = (2.0, 2.0)
     D = 1.0
