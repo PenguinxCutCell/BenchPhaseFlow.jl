@@ -1,5 +1,6 @@
 using LsqFit
 using DataFrames
+using LinearAlgebra
 using Penguin
 
 """
@@ -8,6 +9,34 @@ using Penguin
 Return the number of fully inside cells (cell type == 1).
 """
 count_inside_cells(capacity) = count(x -> x == 1, capacity.cell_types)
+
+function truncation_error_norms(solver, capacity, u_exact)
+    centroids = capacity.C_ω
+    u_exact_vals = [u_exact(c...) for c in centroids]
+    residual = solver.A[1:end÷2, 1:end÷2] * u_exact_vals - solver.b[1:end÷2]
+    cell_types = capacity.cell_types
+
+    idx_all = findall((cell_types .== 1) .| (cell_types .== -1))
+    idx_full = findall(cell_types .== 1)
+    idx_cut = findall(cell_types .== -1)
+
+    l2_all = isempty(idx_all) ? NaN : lp_norm_subset(residual, idx_all, 2, capacity)
+    l2_full = isempty(idx_full) ? NaN : lp_norm_subset(residual, idx_full, 2, capacity)
+    l2_cut = isempty(idx_cut) ? NaN : lp_norm_subset(residual, idx_cut, 2, capacity)
+
+    linf_all = isempty(idx_all) ? NaN : lp_norm_subset(residual, idx_all, Inf, capacity)
+    linf_full = isempty(idx_full) ? NaN : lp_norm_subset(residual, idx_full, Inf, capacity)
+    linf_cut = isempty(idx_cut) ? NaN : lp_norm_subset(residual, idx_cut, Inf, capacity)
+
+    return (
+        l2_all = l2_all,
+        l2_full = l2_full,
+        l2_cut = l2_cut,
+        linf_all = linf_all,
+        linf_full = linf_full,
+        linf_cut = linf_cut
+    )
+end
 
 # Keep only indices that are at least `trim_layers` cells away from the boundary.
 # Returns `nothing` when trimming is disabled or not feasible.
@@ -38,6 +67,132 @@ function build_interior_mask(capacity::Capacity, trim_layers::Int)
 end
 
 apply_trim(idx::Vector{Int}, mask) = mask === nothing ? idx : [i for i in idx if mask[i]]
+
+# Return bounds for an interior box by trimming a margin from the mesh limits.
+function box_bounds_from_margin(capacity::Capacity{D}, margin) where D
+    mesh = capacity.mesh
+    margin_tuple = margin isa Number ? ntuple(_ -> Float64(margin), D) : Tuple(margin)
+    length(margin_tuple) == D || error("margin must be a scalar or a $D-tuple")
+    lower = ntuple(i -> minimum(mesh.nodes[i]) + margin_tuple[i], D)
+    upper = ntuple(i -> maximum(mesh.nodes[i]) - margin_tuple[i], D)
+    any(lower[i] >= upper[i] for i in 1:D) &&
+        @warn "Interior box is empty (lower=$lower, upper=$upper); returning full domain"
+    return lower, upper
+end
+
+function build_box_mask(capacity::Capacity{D}, lower::NTuple{D,Float64}, upper::NTuple{D,Float64}) where D
+    mask = falses(length(capacity.C_ω))
+    for (idx, c) in enumerate(capacity.C_ω)
+        inside = true
+        for d in 1:D
+            if c[d] < lower[d] || c[d] > upper[d]
+                inside = false
+                break
+            end
+        end
+        mask[idx] = inside
+    end
+    return mask
+end
+
+function volume_sum(indices, capacity::Capacity)
+    isempty(indices) && return 0.0
+    return sum(capacity.V[i,i] for i in indices)
+end
+
+# Weighted Lp or L∞ norm helper over a subset of cells.
+function lp_norm_subset(errors, indices, pval, capacity)
+    isempty(indices) && return 0.0
+    if pval == Inf
+        return maximum(abs.(errors[indices]), init=0.0)
+    else
+        part_sum = 0.0
+        for i in indices
+            Vi = capacity.V[i,i]
+            part_sum += (abs(errors[i])^pval) * Vi
+        end
+        vol = volume_sum(indices, capacity)
+        vol == 0.0 && return 0.0
+        return (part_sum / vol)^(1/pval)
+    end
+end
+
+# Relative Lp norm helper over a subset of cells.
+function relative_lp_norm_subset(errors, indices, pval, capacity, u_ana)
+    isempty(indices) && return 0.0
+    if pval == Inf
+        return maximum(abs.(errors[indices] ./ u_ana[indices]), init=0.0)
+    else
+        part_sum = 0.0
+        for i in indices
+            Vi = capacity.V[i,i]
+            part_sum += (abs(errors[i] / u_ana[i])^pval) * Vi
+        end
+        vol = volume_sum(indices, capacity)
+        vol == 0.0 && return 0.0
+        return (part_sum / vol)^(1/pval)
+    end
+end
+
+"""
+    check_convergence_box(u_analytical::Function, solver, capacity::Capacity{D};
+                          p::Real=2, relative::Bool=false,
+                          margin::Real=0.0,
+                          bounds::Union{Nothing,Tuple{NTuple{D,Float64},NTuple{D,Float64}}}=nothing) where D
+
+Compute convergence metrics over a smaller interior box (trimmed by `margin`)
+instead of the full domain. Provide `bounds=(lower, upper)` to override the
+margin-based box. Bounds are interpreted as a hyper-rectangle in centroid space.
+"""
+function check_convergence_box(u_analytical::Function, solver, capacity::Capacity{D};
+                               p::Real=2, relative::Bool=false,
+                               margin::Real=0.0,
+                               bounds::Union{Nothing,Tuple{NTuple{D,Float64},NTuple{D,Float64}}}=nothing) where D
+    cell_centroids = capacity.C_ω
+
+    u_ana = if D == 1
+        map(c -> u_analytical(c[1]), cell_centroids)
+    elseif D == 2
+        map(c -> u_analytical(c[1], c[2]), cell_centroids)
+    elseif D == 3
+        map(c -> u_analytical(c[1], c[2], c[3]), cell_centroids)
+    elseif D == 4
+        map(c -> u_analytical(c[1], c[2], c[3], c[4]), cell_centroids)
+    else
+        error("Unsupported dimension: $D")
+    end
+
+    u_num = solver.x[1:end÷2]
+    err = u_ana .- u_num
+
+    lower, upper = isnothing(bounds) ? box_bounds_from_margin(capacity, margin) : bounds
+    box_mask = build_box_mask(capacity, lower, upper)
+
+    cell_types = capacity.cell_types
+    idx_all = apply_trim(findall((cell_types .== 1) .| (cell_types .== -1)), box_mask)
+    idx_full = apply_trim(findall(cell_types .== 1), box_mask)
+    idx_cut = apply_trim(findall(cell_types .== -1), box_mask)
+    idx_empty = apply_trim(findall(cell_types .== 0), box_mask)
+
+    if relative
+        global_err = relative_lp_norm_subset(err, idx_all, p, capacity, u_ana)
+        full_err = relative_lp_norm_subset(err, idx_full, p, capacity, u_ana)
+        cut_err = relative_lp_norm_subset(err, idx_cut, p, capacity, u_ana)
+        empty_err = relative_lp_norm_subset(err, idx_empty, p, capacity, u_ana)
+    else
+        global_err = lp_norm_subset(err, idx_all, p, capacity)
+        full_err = lp_norm_subset(err, idx_full, p, capacity)
+        cut_err = lp_norm_subset(err, idx_cut, p, capacity)
+        empty_err = lp_norm_subset(err, idx_empty, p, capacity)
+    end
+
+    println("All cells (box) L$p norm   = $global_err")
+    println("Full cells (box) L$p norm  = $full_err")
+    println("Cut cells (box) L$p norm   = $cut_err")
+    println("Empty cells (box) L$p norm = $empty_err")
+
+    return (u_ana, u_num, global_err, full_err, cut_err, empty_err)
+end
 
 """
     check_h1_convergence(grad_analytical, solver, capacity::Capacity{D}, operator; p::Real=2, relative::Bool=false) where D
@@ -343,6 +498,24 @@ function make_convergence_dataframe(method_name, data)
         pair_order_full = pair_full,
         pair_order_cut = pair_cut
     )
+
+    if haskey(data, :trunc_l2_all)
+        df.trunc_all = data.trunc_l2_all
+        df.trunc_full = data.trunc_l2_full
+        df.trunc_cut = data.trunc_l2_cut
+        df.trunc_pair_order_all = compute_pairwise_orders(data.h_vals, data.trunc_l2_all)
+        df.trunc_pair_order_full = compute_pairwise_orders(data.h_vals, data.trunc_l2_full)
+        df.trunc_pair_order_cut = compute_pairwise_orders(data.h_vals, data.trunc_l2_cut)
+    end
+
+    if haskey(data, :trunc_linf_all)
+        df.trunc_max_all = data.trunc_linf_all
+        df.trunc_max_full = data.trunc_linf_full
+        df.trunc_max_cut = data.trunc_linf_cut
+        df.trunc_pair_order_max_all = compute_pairwise_orders(data.h_vals, data.trunc_linf_all)
+        df.trunc_pair_order_max_full = compute_pairwise_orders(data.h_vals, data.trunc_linf_full)
+        df.trunc_pair_order_max_cut = compute_pairwise_orders(data.h_vals, data.trunc_linf_cut)
+    end
 
     return df
 end
