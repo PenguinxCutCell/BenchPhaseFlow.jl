@@ -1,0 +1,7 @@
+method,h,lp_norm,inside_cells,inside_cells_by_dim,all_err,full_err,cut_err,empty_err,pair_order_all,pair_order_full,pair_order_cut
+Scalar_1D_Diffusion_Poisson_MMS_NonHomogeneous_Convergence,0.2,L^2,5,[5],0.016769333133982527,0.016769333133982527,0.0,0.0,NaN,NaN,NaN
+Scalar_1D_Diffusion_Poisson_MMS_NonHomogeneous_Convergence,0.1,L^2,10,[10],0.003426575914390888,0.003426575914390888,0.0,0.0,2.290985763608138,2.290985763608138,NaN
+Scalar_1D_Diffusion_Poisson_MMS_NonHomogeneous_Convergence,0.05,L^2,20,[20],0.0007861800470507464,0.0007861800470507464,0.0,0.0,2.1238359953828114,2.1238359953828114,NaN
+Scalar_1D_Diffusion_Poisson_MMS_NonHomogeneous_Convergence,0.025,L^2,40,[40],0.00018883718489395027,0.00018883718489395027,0.0,0.0,2.0577168680591837,2.0577168680591837,NaN
+Scalar_1D_Diffusion_Poisson_MMS_NonHomogeneous_Convergence,0.0125,L^2,80,[80],4.630439517452218e-5,4.630439517452218e-5,0.0,0.0,2.027921836612296,2.027921836612296,NaN
+Scalar_1D_Diffusion_Poisson_MMS_NonHomogeneous_Convergence,0.00625,L^2,160,[160],1.146637936756586e-5,1.146637936756586e-5,0.0,0.0,2.0137392225867794,2.0137392225867794,NaN

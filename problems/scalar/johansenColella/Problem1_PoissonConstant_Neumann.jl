@@ -112,28 +112,37 @@ function run_star_poisson_convergence(
     inside_cells = Int[]
     inside_cells_by_dim = Vector{Vector{Int}}()
 
-    body = star_level_set
-
     for (nx, ny) in zip(nx_list, ny_list)
+        dx = lx / nx
+        dy = ly / ny
+        x_shift = dx
+        y_shift = dy
+        Lx_eff = lx - dx
+        Ly_eff = ly - dy
+
         mesh = Penguin.Mesh((nx, ny), (lx, ly), (0.0, 0.0))
+        body = (x, y, _=0) -> star_level_set(x - x_shift, y - y_shift)
         capacity = Capacity(body, mesh; method="VOFI", integration_method=:vofijul)
         operator = DiffusionOps(capacity)
+        u_exact_shifted = (x, y) -> u_exact((x - x_shift)/Lx_eff, (y - y_shift)/Ly_eff)
+        source_shifted = (x, y, _=0) -> source((x - x_shift)/Lx_eff, (y - y_shift)/Ly_eff)
+        diffusivity_shifted = (x, y, _=0) -> diffusivity((x - x_shift)/Lx_eff, (y - y_shift)/Ly_eff)
 
-        bc_outer = Dirichlet((x,y,_=0)->u_exact(x,y))
+        bc_outer = Dirichlet((x,y,_=0)->u_exact_shifted(x,y))
         bc_b = BorderConditions(Dict(
             :left   => bc_outer,
             :right  => bc_outer,
             :top    => bc_outer,
             :bottom => bc_outer
         ))
-        phase = Phase(capacity, operator, source, diffusivity)
-        bc_interface = Neumann((x,y,args...)->exact_normal_flux(x, y, center, args...))
+        phase = Phase(capacity, operator, source_shifted, diffusivity_shifted)
+        bc_interface = Neumann((x,y,args...)->exact_normal_flux(x - x_shift, y - y_shift, center, args...))
         solver = DiffusionSteadyMono(phase, bc_b, bc_interface)
         solve_DiffusionSteadyMono!(solver; method=Base.:\)
 
         _, _, global_err, full_err, cut_err, empty_err =
-            check_convergence(u_exact, solver, capacity, norm, relative)
-        trunc = truncation_error_norms(solver, capacity, u_exact)
+            check_convergence(u_exact_shifted, solver, capacity, norm, relative)
+        trunc = truncation_error_norms(solver, capacity, u_exact_shifted)
 
         push!(h_vals, min(lx / nx, ly / ny))
         push!(err_vals, global_err)
@@ -147,8 +156,6 @@ function run_star_poisson_convergence(
         push!(trunc_linf_full, trunc.linf_full)
         push!(trunc_linf_cut, trunc.linf_cut)
         push!(inside_cells, count_inside_cells(capacity))
-        dx = lx / nx
-        dy = ly / ny
         coverage_x = ceil(Int, 2 * star_max_radius() / dx)
         coverage_y = ceil(Int, 2 * star_max_radius() / dy)
         push!(inside_cells_by_dim, [coverage_x, coverage_y])
@@ -192,8 +199,8 @@ function main(; csv_path=nothing, nx_list=nothing, ny_list=nothing)
 
     data = run_star_poisson_convergence(
         nx_vals, ny_vals, center, u_exact;
-        source = (x,y,_)->forcing_problem1(x, y, center),
-        diffusivity = (x,y,_)->1.0,
+        source = (x,y,_=0)->forcing_problem1(x, y, center),
+        diffusivity = (x,y,_=0)->1.0,
         lx = 1.0,
         ly = 1.0,
         norm = 1
@@ -219,10 +226,11 @@ end
 
 # Using cairomakie, plot the solution and the error on the finest mesh
 using CairoMakie
-function plot_solutionn(solver, mesh, body::Function, capacity; state_i=1)
+function plot_solutionn(solver, mesh, capacity; center=center_default(), shift=(0.0, 0.0))
 
     # Use check_convergence to obtain analytical and numerical cell-centered fields
-    u_ana, u_num, _, _, _, _ = check_convergence((x,y)->exact_phi(x, y), solver, capacity)
+    u_exact = (x, y) -> exact_phi(x - shift[1], y - shift[2], center)
+    u_ana, u_num, _, _, _, _ = check_convergence(u_exact, solver, capacity)
 
     # Mask inactive cells (empty cells) using capacity.cell_types
     cell_types = capacity.cell_types
@@ -278,10 +286,15 @@ end
 function plot_solution_and_error(; nx=512, ny=512, center=center_default())
     lx = 1.0
     ly = 1.0
+    dx = lx / nx
+    dy = ly / ny
+    shift = (dx, dy)
+
     mesh = Penguin.Mesh((nx, ny), (lx, ly), (0.0, 0.0))
-    capacity = Capacity(star_level_set, mesh; method="ImplicitIntegration")
+    body = (x, y, _=0) -> star_level_set(x - shift[1], y - shift[2])
+    capacity = Capacity(body, mesh; method="ImplicitIntegration")
     operator = DiffusionOps(capacity)
-    bc_outer = Dirichlet((x,y,_=0)->exact_phi(x, y, center))
+    bc_outer = Dirichlet((x,y,_=0)->exact_phi(x - shift[1], y - shift[2], center))
     bc_b = BorderConditions(Dict(
         :left   => bc_outer,
         :right  => bc_outer,
@@ -289,14 +302,14 @@ function plot_solution_and_error(; nx=512, ny=512, center=center_default())
         :bottom => bc_outer
     ))
     phase = Phase(capacity, operator,
-        (x,y,_)->forcing_problem1(x, y, center),
+        (x,y,_)->forcing_problem1(x - shift[1], y - shift[2], center),
         (x,y,_)->1.0
     )
-    bc_interface = Neumann((x,y,args...)->exact_normal_flux(x, y, center, args...))
+    bc_interface = Neumann((x,y,args...)->exact_normal_flux(x - shift[1], y - shift[2], center, args...))
     solver = DiffusionSteadyMono(phase, bc_b, bc_interface)
     solve_DiffusionSteadyMono!(solver; method=Base.:\)
 
-    plot_solutionn(solver, mesh, star_level_set, capacity)
+    plot_solutionn(solver, mesh, capacity; center=center, shift=shift)
 end
 
 plot_solution_and_error()

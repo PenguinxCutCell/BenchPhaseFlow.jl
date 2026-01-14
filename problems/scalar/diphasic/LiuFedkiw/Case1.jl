@@ -9,8 +9,9 @@ using Test
 Liu-Fedkiw diphasic diffusion benchmark (Case 1).
 
 Problem: u_xx = 0 on [0, 1] with u(0) = 0, u(1) = 2, interface at x = 0.5, jump
-conditions [u] = 1 and [u_x] = 0. Exact solution is u = x on the left of the
-interface and u = x + 1 on the right.
+conditions [u] = 1 and [u_x] = 0. For convergence, the analytical solution is
+evaluated on the effective domain using L_eff = L - dx:
+u_left(x) = (x - dx) / L_eff and u_right(x) = u_left(x) + 1.
 """
 const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", "..", ".."))
 include(joinpath(BENCH_ROOT, "utils", "convergence.jl"))
@@ -68,14 +69,18 @@ function run_liufedkiw_case1(nx_list; lx=1.0, x0=0.0)
     inside_cells_phase2 = Int[]
 
     for nx in nx_list
+        dx = lx / nx
+        lx_eff = lx - dx
         mesh = Penguin.Mesh((nx,), (lx,), (x0,))
         solver, capacity1, capacity2 = build_solver_case1(mesh)
         solve_DiffusionSteadyDiph!(solver; method=Base.:\)
         push!(solver.states, solver.x)
 
+        u_left_shifted = (x) -> (x - dx) / lx_eff
+        u_right_shifted = (x) -> u_left_shifted(x) + 1.0
 
         _, _, global_errs, full_errs, cut_errs, empty_errs =
-            check_convergence_diph(u_left_case1, u_right_case1, solver, capacity1, capacity2, 2, false)
+            check_convergence_diph(u_left_shifted, u_right_shifted, solver, capacity1, capacity2, 2, false)
 
         push!(h_vals, lx / nx)
         push!(err_vals, global_errs[3])
