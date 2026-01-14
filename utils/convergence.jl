@@ -10,7 +10,7 @@ Return the number of fully inside cells (cell type == 1).
 """
 count_inside_cells(capacity) = count(x -> x == 1, capacity.cell_types)
 
-function truncation_error_norms(solver, capacity, u_exact)
+function truncation_error_norms(solver, capacity, u_exact; norm=2)
     centroids = capacity.C_ω
     u_exact_vals = [u_exact(c...) for c in centroids]
     residual = solver.A[1:end÷2, 1:end÷2] * u_exact_vals - solver.b[1:end÷2]
@@ -20,18 +20,18 @@ function truncation_error_norms(solver, capacity, u_exact)
     idx_full = findall(cell_types .== 1)
     idx_cut = findall(cell_types .== -1)
 
-    l2_all = isempty(idx_all) ? NaN : lp_norm_subset(residual, idx_all, 2, capacity)
-    l2_full = isempty(idx_full) ? NaN : lp_norm_subset(residual, idx_full, 2, capacity)
-    l2_cut = isempty(idx_cut) ? NaN : lp_norm_subset(residual, idx_cut, 2, capacity)
+    lp_all = isempty(idx_all) ? NaN : lp_norm_subset(residual, idx_all, norm, capacity)
+    lp_full = isempty(idx_full) ? NaN : lp_norm_subset(residual, idx_full, norm, capacity)
+    lp_cut = isempty(idx_cut) ? NaN : lp_norm_subset(residual, idx_cut, norm, capacity)
 
     linf_all = isempty(idx_all) ? NaN : lp_norm_subset(residual, idx_all, Inf, capacity)
     linf_full = isempty(idx_full) ? NaN : lp_norm_subset(residual, idx_full, Inf, capacity)
     linf_cut = isempty(idx_cut) ? NaN : lp_norm_subset(residual, idx_cut, Inf, capacity)
 
     return (
-        l2_all = l2_all,
-        l2_full = l2_full,
-        l2_cut = l2_cut,
+        lp_all = lp_all,
+        lp_full = lp_full,
+        lp_cut = lp_cut,
         linf_all = linf_all,
         linf_full = linf_full,
         linf_cut = linf_cut

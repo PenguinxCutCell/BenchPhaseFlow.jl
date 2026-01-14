@@ -96,7 +96,7 @@ end
 function main(; csv_path=nothing, nx_list=nothing)
     center = 0.5
     radius = 0.11
-    nx_vals = isnothing(nx_list) ? [2, 4, 8, 16, 32, 64, 128, 256] : nx_list
+    nx_vals = isnothing(nx_list) ? [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288] : nx_list
 
     u_analytical(x) = - (x-center)^3/6 - (center*(x-center)^2)/2 +
                       radius^2/6*(x-center) + center*radius^2/2

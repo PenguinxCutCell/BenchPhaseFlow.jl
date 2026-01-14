@@ -13,6 +13,10 @@ star-shaped domain defined by
 We solve Δϕ = 7 r² cos(3θ) with Dirichlet data taken from the exact solution
 ϕ(r, θ) = r⁴ cos(3θ). Convergence is measured on uniform Cartesian meshes using
 Penguin's implicit-integration capacity.
+
+Truncation errors are computed by inserting the exact solution sampled at the cut-cell centroids into the discrete operator and comparing it with the continuous operator evaluated at the same centroid locations. 
+This differs slightly from the convention used by Johansen and Colella, who evaluate the exact solution at Cartesian cell centers while evaluating the right-hand side at cut-cell centroids. 
+The error constants might differ.
 """
 
 const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
@@ -66,9 +70,9 @@ function run_star_poisson_convergence(
     err_full = Float64[]
     err_cut = Float64[]
     err_empty = Float64[]
-    trunc_l2_all = Float64[]
-    trunc_l2_full = Float64[]
-    trunc_l2_cut = Float64[]
+    trunc_lp_all = Float64[]
+    trunc_lp_full = Float64[]
+    trunc_lp_cut = Float64[]
     trunc_linf_all = Float64[]
     trunc_linf_full = Float64[]
     trunc_linf_cut = Float64[]
@@ -102,9 +106,9 @@ function run_star_poisson_convergence(
         push!(err_full, full_err)
         push!(err_cut, cut_err)
         push!(err_empty, empty_err)
-        push!(trunc_l2_all, trunc.l2_all)
-        push!(trunc_l2_full, trunc.l2_full)
-        push!(trunc_l2_cut, trunc.l2_cut)
+        push!(trunc_lp_all, trunc.lp_all)
+        push!(trunc_lp_full, trunc.lp_full)
+        push!(trunc_lp_cut, trunc.lp_cut)
         push!(trunc_linf_all, trunc.linf_all)
         push!(trunc_linf_full, trunc.linf_full)
         push!(trunc_linf_cut, trunc.linf_cut)
@@ -122,16 +126,16 @@ function run_star_poisson_convergence(
         err_full_vals = err_full,
         err_cut_vals = err_cut,
         err_empty_vals = err_empty,
-        trunc_l2_all = trunc_l2_all,
-        trunc_l2_full = trunc_l2_full,
-        trunc_l2_cut = trunc_l2_cut,
+        trunc_lp_all = trunc_lp_all,
+        trunc_lp_full = trunc_lp_full,
+        trunc_lp_cut = trunc_lp_cut,
         trunc_linf_all = trunc_linf_all,
         trunc_linf_full = trunc_linf_full,
         trunc_linf_cut = trunc_linf_cut,
         inside_cells = inside_cells,
         inside_cells_by_dim = inside_cells_by_dim,
         orders = compute_orders(h_vals, err_vals, err_full, err_cut),
-        trunc_orders_l2 = compute_orders(h_vals, trunc_l2_all, trunc_l2_full, trunc_l2_cut),
+        trunc_orders_lp = compute_orders(h_vals, trunc_lp_all, trunc_lp_full, trunc_lp_cut),
         trunc_orders_linf = compute_orders(h_vals, trunc_linf_all, trunc_linf_full, trunc_linf_cut),
         norm = norm
     )
