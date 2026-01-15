@@ -10,7 +10,6 @@ using Test
 Solve -div(k grad u) = f on r <= R, u = 0 on r = R.
 Exact solution (non-radial, m=2 by default):
     u(x,y) = (1 - r^2/R^2) * P_m(x,y), with P_m = Re((x + i y)^m).
-TODO : Do a parametric study on k-profile steepness (eps), jump (k_max/k_min), and arithmetic vs harmonic mean for diffusivity in cut cells.
 """
 
 const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
