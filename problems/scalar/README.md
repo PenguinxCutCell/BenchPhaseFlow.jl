@@ -5,6 +5,7 @@
 - Unsteady Diffusion (Heat Equation) with Dirichlet BCs : `Scalar_1D_Diffusion_Heat_Dirichlet.jl`, `Scalar_2D_Diffusion_Heat_Dirichlet.jl`, `Scalar_3D_Diffusion_Heat_Dirichlet.jl`
 - Unsteady Diffusion (Heat Equation) with Robin BCs : `Scalar_1D_Diffusion_Heat_Robin.jl`, `Scalar_2D_Diffusion_Heat_Robin.jl`, `Scalar_3D_Diffusion_Heat_Robin.jl`
 - Disconnected-domain diffusion benchmark: `ConnectivityTwoCircles/TwoRingDiffusion.jl`
+- Comp1Fluid Henry-law diphasic heat cases: `Comp1Fluid/Heat_2ph_2D_Comp1Fluid.jl`
 
 ## Problem Descriptions
 **Steady Diffusion (Poisson Equation) with Dirichlet BCs**:
