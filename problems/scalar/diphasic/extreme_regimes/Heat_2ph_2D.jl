@@ -10,10 +10,12 @@ using Test
 """
 Diphasic 2D heat diffusion benchmark reproduced from `benchmark/Heat_2ph_2D.jl`.
 Performs a mesh-convergence study with a circular interface and writes CSV data
-only (no plots).
+only (no plots). This variant sweeps multiple Henry jumps.
 """
-const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
+const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", "..", ".."))
 include(joinpath(BENCH_ROOT, "utils", "convergence.jl"))
+
+const DEFAULT_HE_JUMPS = [0.01, 0.1, 1.0, 10.0, 100.0]
 
 struct Heat2Ph2DParams
     lx::Float64
@@ -31,7 +33,7 @@ struct Heat2Ph2DParams
 end
 
 Heat2Ph2DParams(; lx=8.0, ly=8.0, x0=0.0, y0=0.0, center=(4.0, 4.0),
-                radius=2.0, Tend=0.1, Dg=1.0, Dl=1.0, He=1.0,
+                radius=2.0, Tend=0.1, Dg=1.0, Dl=1.0, He=2.0,
                 cg0=1.0, cl0=0.0) =
     Heat2Ph2DParams(lx, ly, x0, y0, center, radius, Tend, Dg, Dl, He, cg0, cl0)
 
@@ -202,31 +204,69 @@ end
 
 function write_convergence_csv(method_name, data; csv_path=nothing)
     df = make_diphasic_convergence_dataframe(method_name, data)
+    is_csv_file = !isnothing(csv_path) && endswith(lowercase(csv_path), ".csv")
     results_dir = isnothing(csv_path) ?
-        joinpath(BENCH_ROOT, "results", "scalar", "diphasic") :
-        dirname(csv_path)
+        joinpath(BENCH_ROOT, "results", "scalar", "diphasic", "extreme_regimes") :
+        (is_csv_file ? dirname(csv_path) : csv_path)
     mkpath(results_dir)
-    csv_out = isnothing(csv_path) ?
+    csv_out = (isnothing(csv_path) || !is_csv_file) ?
         joinpath(results_dir, "$(method_name)_Convergence.csv") :
         csv_path
     CSV.write(csv_out, df)
     return (csv_path = csv_out, table = df)
 end
 
-function main(; csv_path=nothing, nx_list=nothing, params::Heat2Ph2DParams=Heat2Ph2DParams())
+function _rebuild_params(params::Heat2Ph2DParams; He=params.He)
+    return Heat2Ph2DParams(
+        params.lx, params.ly, params.x0, params.y0, params.center, params.radius,
+        params.Tend, params.Dg, params.Dl, He, params.cg0, params.cl0
+    )
+end
+
+function main(;
+    csv_path=nothing,
+    csv_dir=csv_path,
+    nx_list=nothing,
+    he_list=nothing,
+    params::Heat2Ph2DParams=Heat2Ph2DParams()
+)
     nx_vals = isnothing(nx_list) ? [4, 8, 16, 32, 64, 128] : nx_list
-    data = run_heat_2ph_2d(nx_vals; params=params)
-    csv_info = write_convergence_csv("Heat_2ph_2D_He$(params.He)_Dl$(params.Dl)", data; csv_path=csv_path)
-    return (data = data, csv_path = csv_info.csv_path, table = csv_info.table)
+    he_vals = isnothing(he_list) ? DEFAULT_HE_JUMPS : he_list
+    num_cases = length(he_vals)
+
+    if num_cases > 1 && !isnothing(csv_dir) && endswith(lowercase(csv_dir), ".csv")
+        error("Provide a directory path (or nothing) for csv_dir when running multiple cases.")
+    end
+
+    results = NamedTuple[]
+
+    for He in he_vals
+        params_case = _rebuild_params(params; He=He)
+        data = run_heat_2ph_2d(nx_vals; params=params_case)
+        method_name = "Heat_2ph_2D_He$(params_case.He)_Dl$(params_case.Dl)"
+        csv_info = write_convergence_csv(method_name, data; csv_path=csv_dir)
+        push!(results, (
+            He = params_case.He,
+            params = params_case,
+            data = data,
+            csv_path = csv_info.csv_path,
+            table = csv_info.table
+        ))
+    end
+
+    return results
 end
 
 results = main()
 
-@testset "Diphasic Heat 2D convergence" begin
-    orders = results.data.orders
-    @test !isnan(orders.all)
-    @test length(results.data.h_vals) == length(results.data.err_vals)
-    @test results.data.h_vals[1] > results.data.h_vals[end]
-    @test minimum(results.data.err_vals) < maximum(results.data.err_vals)
-    @test isfile(results.csv_path)
+@testset "Diphasic Heat 2D convergence (multiple Henry jumps)" begin
+    @test length(results) == length(DEFAULT_HE_JUMPS)
+    for res in results
+        orders = res.data.orders
+        @test !isnan(orders.all)
+        @test length(res.data.h_vals) == length(res.data.err_vals)
+        @test res.data.h_vals[1] > res.data.h_vals[end]
+        @test minimum(res.data.err_vals) < maximum(res.data.err_vals)
+        @test isfile(res.csv_path)
+    end
 end

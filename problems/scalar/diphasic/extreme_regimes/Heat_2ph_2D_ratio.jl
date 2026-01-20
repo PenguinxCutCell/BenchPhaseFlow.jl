@@ -10,10 +10,13 @@ using Test
 """
 Diphasic 2D heat diffusion benchmark reproduced from `benchmark/Heat_2ph_2D.jl`.
 Performs a mesh-convergence study with a circular interface and writes CSV data
-only (no plots).
+only (no plots). This variant sweeps diffusivity ratios at a fixed Henry jump.
 """
-const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
+const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", "..", ".."))
 include(joinpath(BENCH_ROOT, "utils", "convergence.jl"))
+
+const DEFAULT_DIFFUSIVITY_RATIOS = [1e0, 1e2, 1e4, 1e6]
+const BASE_DL = 1.0
 
 struct Heat2Ph2DParams
     lx::Float64
@@ -148,7 +151,7 @@ function run_heat_2ph_2d(
         push!(dt_vals, Δt)
 
         solver = DiffusionUnsteadyDiph(phase1, phase2, bc_b, ic, Δt, u0, "BE")
-        solve_DiffusionUnsteadyDiph!(solver, phase1, phase2, Δt, params.Tend, bc_b, ic, "BE"; method=Base.:\)
+        solve_DiffusionUnsteadyDiph!(solver, phase1, phase2, Δt, params.Tend, bc_b, ic, "CN"; method=Base.:\)
         push!(solver.states, solver.x)
 
         _, _, global_errs, full_errs, cut_errs, empty_errs =
@@ -202,31 +205,73 @@ end
 
 function write_convergence_csv(method_name, data; csv_path=nothing)
     df = make_diphasic_convergence_dataframe(method_name, data)
+    is_csv_file = !isnothing(csv_path) && endswith(lowercase(csv_path), ".csv")
     results_dir = isnothing(csv_path) ?
-        joinpath(BENCH_ROOT, "results", "scalar", "diphasic") :
-        dirname(csv_path)
+        joinpath(BENCH_ROOT, "results", "scalar", "diphasic", "extreme_regimes") :
+        (is_csv_file ? dirname(csv_path) : csv_path)
     mkpath(results_dir)
-    csv_out = isnothing(csv_path) ?
+    csv_out = (isnothing(csv_path) || !is_csv_file) ?
         joinpath(results_dir, "$(method_name)_Convergence.csv") :
         csv_path
     CSV.write(csv_out, df)
     return (csv_path = csv_out, table = df)
 end
 
-function main(; csv_path=nothing, nx_list=nothing, params::Heat2Ph2DParams=Heat2Ph2DParams())
+function _rebuild_params(params::Heat2Ph2DParams; ratio=DEFAULT_DIFFUSIVITY_RATIOS[1], Dl=BASE_DL, He=params.He)
+    return Heat2Ph2DParams(
+        params.lx, params.ly, params.x0, params.y0, params.center, params.radius,
+        params.Tend, ratio * Dl, Dl, He, params.cg0, params.cl0
+    )
+end
+
+function main(;
+    csv_path=nothing,
+    csv_dir=csv_path,
+    nx_list=nothing,
+    ratio_list=nothing,
+    He=nothing,
+    Dl=BASE_DL,
+    params::Heat2Ph2DParams=Heat2Ph2DParams()
+)
     nx_vals = isnothing(nx_list) ? [4, 8, 16, 32, 64, 128] : nx_list
-    data = run_heat_2ph_2d(nx_vals; params=params)
-    csv_info = write_convergence_csv("Heat_2ph_2D_He$(params.He)_Dl$(params.Dl)", data; csv_path=csv_path)
-    return (data = data, csv_path = csv_info.csv_path, table = csv_info.table)
+    ratios = isnothing(ratio_list) ? DEFAULT_DIFFUSIVITY_RATIOS : ratio_list
+    he_val = isnothing(He) ? params.He : He
+    num_cases = length(ratios)
+
+    if num_cases > 1 && !isnothing(csv_dir) && endswith(lowercase(csv_dir), ".csv")
+        error("Provide a directory path (or nothing) for csv_dir when running multiple cases.")
+    end
+
+    results = NamedTuple[]
+
+    for ratio in ratios
+        params_case = _rebuild_params(params; ratio=ratio, Dl=Dl, He=he_val)
+        data = run_heat_2ph_2d(nx_vals; params=params_case)
+        method_name = "Heat_2ph_2D_ratio$(ratio)_He$(params_case.He)_Dl$(params_case.Dl)"
+        csv_info = write_convergence_csv(method_name, data; csv_path=csv_dir)
+        push!(results, (
+            ratio = ratio,
+            He = params_case.He,
+            params = params_case,
+            data = data,
+            csv_path = csv_info.csv_path,
+            table = csv_info.table
+        ))
+    end
+
+    return results
 end
 
 results = main()
 
-@testset "Diphasic Heat 2D convergence" begin
-    orders = results.data.orders
-    @test !isnan(orders.all)
-    @test length(results.data.h_vals) == length(results.data.err_vals)
-    @test results.data.h_vals[1] > results.data.h_vals[end]
-    @test minimum(results.data.err_vals) < maximum(results.data.err_vals)
-    @test isfile(results.csv_path)
+@testset "Diphasic Heat 2D convergence (diffusivity ratios)" begin
+    @test length(results) == length(DEFAULT_DIFFUSIVITY_RATIOS)
+    for res in results
+        orders = res.data.orders
+        @test !isnan(orders.all)
+        @test length(res.data.h_vals) == length(res.data.err_vals)
+        @test res.data.h_vals[1] > res.data.h_vals[end]
+        @test minimum(res.data.err_vals) < maximum(res.data.err_vals)
+        @test isfile(res.csv_path)
+    end
 end
