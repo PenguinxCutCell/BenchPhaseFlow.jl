@@ -31,13 +31,13 @@ function run_heat1d(nx_list; lx=2.0, x0=-1.0, Tend=0.1)
         u0ᵧ = zeros(ndofs)
         u0 = vcat(u0ₒ, u0ᵧ)
 
-        Δt = 0.25 * (lx / nx)^2
-        solver = DiffusionUnsteadyMono(phase, bc_b, bc, Δt, u0, "BE")
+        Δt = 0.1 * (lx / nx)^2
+        solver = DiffusionUnsteadyMono(phase, bc_b, bc, Δt, u0, "CN")
         solve_DiffusionUnsteadyMono!(solver, phase, Δt, Tend, bc_b, bc, "CN"; method=Base.:\)
 
         capacity_tend = Capacity(body, mesh; compute_centroids=false)
         _, _, global_err, full_err, cut_err, empty_err =
-            check_convergence(x->T_exact(x,Tend), solver, capacity_tend, 2)
+            check_convergence(x->T_exact(x,Tend), solver, capacity_tend, 1)
 
         push!(h_vals, lx / nx)
         push!(err_vals, global_err); push!(err_full_vals, full_err)
@@ -66,7 +66,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing)
-    nx_vals = isnothing(nx_list) ? [32, 64, 128, 256] : nx_list
+    nx_vals = isnothing(nx_list) ? [41, 81, 161] : nx_list
     data = run_heat1d(nx_vals)
     csv_info = write_convergence_csv("GibouFedkiw_Heat1D", data; csv_path=csv_path)
     return (data=data, csv_path=csv_info.csv_path, table=csv_info.table)

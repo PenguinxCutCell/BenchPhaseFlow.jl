@@ -1,0 +1,17 @@
+Table VII - 1D Heat Equation - Backward Euler - \Delta t = \Delta x
+Number of Points    L1-error    order   L-inf-error   order
+41  1.443e-2  -      2.222e-2  -
+81  7.240e-3  0.99  1.118e-2  0.992
+161 3.634e-3  0.99  5.604e-3  0.97
+
+Table VIII - 1D Heat Equation - Backward Euler - \Delta t = \Delta x^2
+Number of Points    L1-error    order   L-inf-error   order
+41  6.198e-4  -      8.866e-4  -
+81  1.540e-4  1.98  2.194e-4  2.00
+161 3.839e-5  2.01  5.458e-5  2.00
+
+Table IX - 1D Heat Equation - Crank-Nicolson - \Delta t = \Delta x
+Number of Points    L1-error    order   L-inf-error   order
+41  4.084e-4  -      6.811e-4  -
+81  9.907e-5  2.01  1.623e-4  2.08
+161 2.424e-5  2.03  3.993e-5  2.00

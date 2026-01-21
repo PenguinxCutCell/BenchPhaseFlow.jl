@@ -26,12 +26,13 @@ function run_heat2d(nx_list, ny_list; lx=2.0, ly=2.0, x0=-1.0, y0=-1.0, Tend=0.1
 
     for (nx, ny) in zip(nx_list, ny_list)
         mesh = Penguin.Mesh((nx,ny),(lx,ly),(x0,y0))
-        capacity = Capacity(body, mesh; method="ImplicitIntegration")
+        capacity = Capacity(body, mesh; method="VOFI", integration_method=:vofijul)
         operator = DiffusionOps(capacity)
 
         bc = Dirichlet((x,y,t)->T_exact(x,y,t))
         bc_b = BorderConditions(Dict(:left=>bc,:right=>bc,:top=>bc,:bottom=>bc))
-        phase = Phase(capacity, operator, (x,y,z,t)->0.0, (x,y,z)->1.0)
+        
+        phase = Phase(capacity, operator, f, (x,y,z)->1.0)
 
         ndofs = (nx+1)*(ny+1)
         u0ₒ = [T_exact(mesh.nodes[1][i], mesh.nodes[2][j], 0.0) for j in 1:ny+1, i in 1:nx+1]
@@ -39,7 +40,7 @@ function run_heat2d(nx_list, ny_list; lx=2.0, ly=2.0, x0=-1.0, y0=-1.0, Tend=0.1
         u0ᵧ = zeros(ndofs)
         u0 = vcat(u0ₒ, u0ᵧ)
 
-        Δt = 0.25 * min((lx/nx)^2, (ly/ny)^2)
+        Δt = 0.5 * min((lx/nx)^2, (ly/ny)^2)
         solver = DiffusionUnsteadyMono(phase, bc_b, bc, Δt, u0, "BE")
         solve_DiffusionUnsteadyMono!(solver, phase, Δt, Tend, bc_b, bc, "CN"; method=Base.:\)
 
@@ -76,7 +77,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing, ny_list=nothing)
-    nx_vals = isnothing(nx_list) ? [16, 32, 64] : nx_list
+    nx_vals = isnothing(nx_list) ? [41, 81, 161] : nx_list
     ny_vals = isnothing(ny_list) ? nx_vals : ny_list
     data = run_heat2d(nx_vals, ny_vals)
     csv_info = write_convergence_csv("GibouFedkiw_Heat2D", data; csv_path=csv_path)

@@ -35,3 +35,26 @@ allowing for error analysis and convergence studies.
 Implemented in `Heat3D.jl`, this problem involves solving the heat equation
 in a three-dimensional domain with a star-shaped interface. The exact solution is known,
 allowing for error analysis and convergence studies.
+
+
+# Results
+
+## Problem 4
+
+| Case | N / Points | Error | Order |
+|------|------------|-------|-------|
+| This work | 41 | 1.7988e-2 | – |
+|          | 81 | 9.4519e-3 | 0.93 |
+|          | 161 | 4.8470e-3 | 0.97 |
+| Gibou et al. | 41  | 1.443e-2 | – |
+|              | 81  | 7.240e-3 | 0.99 |
+|              | 161 | 3.634e-3 | 0.99 |
+
+| Case | N / Points | Error | Order |
+|------|------------|-------|-------|
+| This work | 41 | 4.5533e-4 | – |
+|          | 81 | 1.1607e-4 | 1.97 |
+|          | 161 | 2.8908e-5 | 2.01 |
+| Gibou et al. | 41  | 4.084e-4 | – |
+|              | 81  | 9.907e-5 | 2.01 |
+|              | 161 | 2.424e-5 | 2.03 |
