@@ -30,7 +30,7 @@ struct Heat2Ph2DParams
     cl0::Float64
 end
 
-Heat2Ph2DParams(; lx=10.0, ly=10.0, x0=0.0, y0=0.0, center=(5.0, 5.0),
+Heat2Ph2DParams(; lx=40.0, ly=40.0, x0=-20.0, y0=-20.0, center=(0.0, 0.0),
                 radius=1.0, Tend=0.557312, Dg=1/100.0, Dl=1.0, He=30.0,
                 cg0=1.0, cl0=0.0) =
     Heat2Ph2DParams(lx, ly, x0, y0, center, radius, Tend, Dg, Dl, He, cg0, cl0)

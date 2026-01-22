@@ -27,7 +27,7 @@ Source term: zero in both phases.
 const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
 include(joinpath(BENCH_ROOT, "utils", "convergence.jl"))
 
-const Dg = 1.0e-3
+const Dg = 1.0
 const Dl = 1.0
 const R0 = 1.0
 const alpha = 1.0        # Henry coefficient α
@@ -107,16 +107,10 @@ function build_bubble_components(mesh; center=CENTER, radius=R0)
     end
 
     bc_b = BorderConditions(Dict(
-        :left => Dirichlet(bc_func),
-        :right => Dirichlet(bc_func),
-        :top => Dirichlet(bc_func),
-        :bottom => Dirichlet(bc_func),
-        :front => Dirichlet(bc_func),
-        :back => Dirichlet(bc_func)
     ))
 
     ic = InterfaceConditions(
-        ScalarJump(1.0, 1.0, 0.0),
+        ScalarJump(1.0, 1.0/alpha, 0.0),
         FluxJump(Dg, Dl, 0.0)
     )
 
@@ -244,7 +238,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing)
-    nx_vals = isnothing(nx_list) ? [4, 8, 16, 31, 63] : nx_list
+    nx_vals = isnothing(nx_list) ? [4, 8, 16, 31, 42, 53] : nx_list
     data = run_bubble_3d(nx_vals)
     csv_info = write_convergence_csv("Diph_3D_Bubble", data; csv_path=csv_path)
     return (data = data, csv_path = csv_info.csv_path, table = csv_info.table)
