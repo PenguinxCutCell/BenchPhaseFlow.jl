@@ -17,6 +17,17 @@ benchmark. Writes CSV data only (no plots).
 const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", "..", ".."))
 include(joinpath(BENCH_ROOT, "utils", "convergence.jl"))
 
+const BASE_DL = 1.0
+const DEFAULT_HE_DIFFUSIVITY_CASES = Dict(
+    1e-3 => [1e0, 1e2, 1e4, 1e6],
+    1e-2 => [1e0, 1e2, 1e4, 1e6],
+    1e-1 => [1e0, 1e2, 1e4, 1e6],
+    1e0  => [1e0, 1e2, 1e4, 1e6],
+    1e1  => [1e0, 1e2, 1e4, 1e6],
+    1e2  => [1e0, 1e2, 1e4, 1e6],
+    1e3  => [1e0, 1e2, 1e4, 1e6]
+)
+
 struct Heat2Ph2DParams
     lx::Float64
     ly::Float64
@@ -289,32 +300,74 @@ end
 
 function write_convergence_csv(method_name, data; csv_path=nothing)
     df = make_interface_convergence_dataframe(data)
+    is_csv_file = !isnothing(csv_path) && endswith(lowercase(csv_path), ".csv")
     results_dir = isnothing(csv_path) ?
         joinpath(BENCH_ROOT, "results", "scalar", "diphasic", "extreme_regimes", "interface") :
-        dirname(csv_path)
+        (is_csv_file ? dirname(csv_path) : csv_path)
     mkpath(results_dir)
-    csv_out = isnothing(csv_path) ?
+    csv_out = (isnothing(csv_path) || !is_csv_file) ?
         joinpath(results_dir, "$(method_name)_Convergence.csv") :
         csv_path
     CSV.write(csv_out, df)
     return (csv_path = csv_out, table = df)
 end
 
-function main(; csv_path=nothing, nx_list=nothing, params::Heat2Ph2DParams=Heat2Ph2DParams(), relative=false)
+function _rebuild_params(params::Heat2Ph2DParams; ratio=1.0, Dl=BASE_DL, He=params.He)
+    return Heat2Ph2DParams(
+        params.lx, params.ly, params.x0, params.y0, params.center, params.radius,
+        params.Tend, ratio * Dl, Dl, He, params.cg0, params.cl0
+    )
+end
+
+function main(;
+    csv_path=nothing,
+    csv_dir=csv_path,
+    nx_list=nothing,
+    case_dict=nothing,
+    Dl=BASE_DL,
+    params::Heat2Ph2DParams=Heat2Ph2DParams(),
+    relative=false
+)
     nx_vals = isnothing(nx_list) ? [8, 16, 32, 64, 128, 256] : nx_list
-    data = run_heat_2ph_2d_interface(nx_vals; params=params, relative=relative)
-    method_name = "Heat_2ph_2D_interface_He$(params.He)_Ratio$(params.Dg / params.Dl)"
-    csv_info = write_convergence_csv(method_name, data; csv_path=csv_path)
-    return (data = data, csv_path = csv_info.csv_path, table = csv_info.table)
+    cases = isnothing(case_dict) ? DEFAULT_HE_DIFFUSIVITY_CASES : case_dict
+
+    if length(cases) > 1 && !isnothing(csv_dir) && endswith(lowercase(csv_dir), ".csv")
+        error("Provide a directory path (or nothing) for csv_dir when running multiple cases.")
+    end
+
+    results = NamedTuple[]
+
+    for (He, ratios) in cases
+        for ratio in ratios
+            params_case = _rebuild_params(params; ratio=ratio, Dl=Dl, He=He)
+            data = run_heat_2ph_2d_interface(nx_vals; params=params_case, relative=relative)
+            method_name = "Heat_2ph_2D_interface_ratio$(ratio)_He$(params_case.He)_Dl$(params_case.Dl)"
+            csv_info = write_convergence_csv(method_name, data; csv_path=csv_dir)
+            push!(results, (
+                ratio = ratio,
+                He = params_case.He,
+                params = params_case,
+                data = data,
+                csv_path = csv_info.csv_path,
+                table = csv_info.table
+            ))
+        end
+    end
+
+    return results
 end
 
 results = main()
 
 @testset "Diphasic Heat 2D interface convergence" begin
-    @test length(results.data.h_vals) == length(results.data.qn_err_max)
-    @test length(results.data.h_vals) == length(results.data.c_interface_err_max)
-    @test results.data.h_vals[1] > results.data.h_vals[end]
-    @test minimum(results.data.qn_err_max) <= maximum(results.data.qn_err_max)
-    @test minimum(results.data.c_interface_err_max) <= maximum(results.data.c_interface_err_max)
-    @test isfile(results.csv_path)
+    expected = sum(length(v) for v in values(DEFAULT_HE_DIFFUSIVITY_CASES))
+    @test length(results) == expected
+    for res in results
+        @test length(res.data.h_vals) == length(res.data.qn_err_max)
+        @test length(res.data.h_vals) == length(res.data.c_interface_err_max)
+        @test res.data.h_vals[1] > res.data.h_vals[end]
+        @test minimum(res.data.qn_err_max) <= maximum(res.data.qn_err_max)
+        @test minimum(res.data.c_interface_err_max) <= maximum(res.data.c_interface_err_max)
+        @test isfile(res.csv_path)
+    end
 end
