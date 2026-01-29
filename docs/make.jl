@@ -168,4 +168,11 @@ makedocs(
     pages = pages,
     clean = true,
     format = html,
+    repo = "github.com/PenguinxCutCell/BenchPhaseFlow.jl.git",
+)
+
+deploydocs(
+    repo = "github.com/PenguinxCutCell/BenchPhaseFlow.jl.git",
+    devbranch = "main",
+    push_preview = true,
 )
