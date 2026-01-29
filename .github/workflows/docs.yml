@@ -18,6 +18,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Configure Git
+        run: git config --global init.defaultBranch main
+
       - uses: julia-actions/setup-julia@v2
         with:
           version: '1'
@@ -25,9 +28,6 @@ jobs:
       - uses: julia-actions/cache@v1
         with:
           cache-compiled: true
-
-      - name: Configure Git
-        run: git config --global init.defaultBranch main
 
       - name: Install dependencies
         run: julia --project=docs -e 'using Pkg; Pkg.instantiate()'
