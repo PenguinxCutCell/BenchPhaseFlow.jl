@@ -2,10 +2,16 @@
 
 Steady 2D Poisson problem with an embedded circular Robin boundary.
 
-The domain is [0, 4]^2 with a circular obstacle of radius `ly / 4` centered at
-`(lx/2, ly/2) + (0.01, 0.01)`. Dirichlet zero data is imposed on the outer box
-and Robin(1, 1, 1) data on the embedded boundary. The manufactured solution
-`u(x, y) = 7/4 - ((x - cx)^2 + (y - cy)^2)/4` is used to measure both L2 and H1
+The domain is $[0, 4]^2$ with a circular obstacle of radius $ly / 4$ centered at
+$(lx/2, ly/2) + (0.01, 0.01)$. Dirichlet zero data is imposed on the outer box
+and Robin(1, 1, 1) data on the embedded boundary. 
+
+```math
+-\Delta u = f, \quad u|_{\partial \Omega} = 0, \quad \partial_n u + u = 1.0 \text{ on } \Gamma,
+```
+
+The manufactured solution
+`u(x, y) = 7/4 - ((x - cx)^2 + (y - cy)^2)/4` is used to measure both L2 and semi-H1
 (gradient) convergence.
 
 **CSV source:** `results/scalar/Scalar_2D_Diffusion_Poisson_Robin_Convergence.csv`

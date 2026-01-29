@@ -6,8 +6,12 @@ using the Penguin.jl library. It mirrors the 2D benchmark but for a sphere,
 reporting errors and estimated convergence orders across meshes and exporting
 results to a CSV file (no plotting or ad-hoc outputs).
 The analytical solution used is the classical series for a cooling sphere:
-u(r,t) = Tb + (T0 - Tb) * (2R)/(πr) * Σ_{n=1}^∞ (-1)^{n+1} (1/n) sin(nπr/R) exp(-κ (nπ/R)^2 t),
-with the r → 0 limit handled analytically.
+
+```math
+T(r,t) = T_b + (T_0 - T_b) \frac{2R}{\pi r} \sum_{n=1}^{\infty} (-1)^{n+1} \frac{1}{n} \sin\!\left(\frac{n \pi r}{R}\right) e^{-\kappa \left(\frac{n \pi}{R}\right)^2 t},
+```
+
+with boundary temperature \(T_b\), initial temperature \(T_0\), radius \(R\), thermal diffusivity \(\kappa\), and radial coordinate \(r\).
 
 **CSV source:** `results/scalar/Scalar_3D_Diffusion_Heat_Dirichlet_Convergence.csv`
 
