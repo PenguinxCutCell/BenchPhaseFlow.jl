@@ -33,10 +33,11 @@ jobs:
         run: |
           julia --project=docs -e '
             using Pkg
-            Pkg.add(url="https://github.com/PenguinxCutCell/VofiJul.jl.git")
-            Pkg.add(url="https://github.com/PenguinxCutCell/FrontCutTracking.jl.git")
-            Pkg.add(url="https://github.com/PenguinxCutCell/ImplicitCutIntegration.jl.git")
-            Pkg.add(url="https://github.com/PenguinxCutCell/Penguin.jl.git")
+            Pkg.develop(url="https://github.com/PenguinxCutCell/VofiJul.jl.git")
+            Pkg.develop(url="https://github.com/PenguinxCutCell/FrontCutTracking.jl.git")
+            Pkg.develop(url="https://github.com/PenguinxCutCell/ImplicitCutIntegration.jl.git")
+            Pkg.develop(url="https://github.com/PenguinxCutCell/VTLInputs.jl.git")
+            Pkg.develop(url="https://github.com/PenguinxCutCell/Penguin.jl.git")
             Pkg.develop(PackageSpec(path=pwd()))
             Pkg.instantiate()
           '
