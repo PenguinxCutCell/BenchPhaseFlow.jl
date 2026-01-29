@@ -29,8 +29,6 @@ jobs:
         with:
           cache-compiled: true
 
-      - uses: julia-actions/julia-buildpkg@v1
-
       - name: Install documentation dependencies
         run: |
           julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
