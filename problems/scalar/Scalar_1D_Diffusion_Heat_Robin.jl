@@ -118,7 +118,7 @@ end
 
 function main(; csv_path=nothing, nx_list=nothing)
     nx_vals = isnothing(nx_list) ? [4, 8, 16, 32, 64, 128] : nx_list
-    center = 0.51
+    center = 0.5
     Tend = 1.0
     robin_k = 1.0
     diffusivity = 5.0
@@ -126,10 +126,10 @@ function main(; csv_path=nothing, nx_list=nothing)
 
     data = run_robin_heat_1d(
         nx_vals, center, u_analytical;
-        lx = 10.0, norm = Inf, Tend = Tend, robin_k = robin_k, diffusivity = diffusivity
+        lx = 10.0, norm = 2, Tend = Tend, robin_k = robin_k, diffusivity = diffusivity
     )
 
-    csv_info = write_convergence_csv("Scalar_1D_Diffusion_Heat_Robin_Linf", data; csv_path=csv_path)
+    csv_info = write_convergence_csv("Scalar_1D_Diffusion_Heat_Robin", data; csv_path=csv_path)
     return (data = data, csv_path = csv_info.csv_path, table = csv_info.table)
 end
 

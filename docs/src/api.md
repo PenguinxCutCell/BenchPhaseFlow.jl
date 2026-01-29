@@ -1,0 +1,20 @@
+# API Reference
+
+```@docs
+BenchPhaseFlow.count_inside_cells
+BenchPhaseFlow.truncation_error_norms
+BenchPhaseFlow.build_interior_mask
+BenchPhaseFlow.apply_trim
+BenchPhaseFlow.box_bounds_from_margin
+BenchPhaseFlow.build_box_mask
+BenchPhaseFlow.volume_sum
+BenchPhaseFlow.lp_norm_subset
+BenchPhaseFlow.relative_lp_norm_subset
+BenchPhaseFlow.check_convergence_box
+BenchPhaseFlow.check_h1_convergence
+BenchPhaseFlow.check_convergence_diphh
+BenchPhaseFlow.compute_orders
+BenchPhaseFlow.compute_pairwise_orders
+BenchPhaseFlow.make_convergence_dataframe
+BenchPhaseFlow.make_diphasic_convergence_dataframe
+```

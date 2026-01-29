@@ -1,36 +1,24 @@
-# BenchPhaseFlow Results
+# BenchPhaseFlow: Penguin.jl Benchmarks
 
-This micro-site is generated with [Documenter.jl](https://documenter.julialang.org/) and summarizes the CSV convergence studies stored under `results/`. Each benchmark script inside `problems/` writes a CSV and ships with a short description at the top of the file. The build step reuses that text so you can quickly remember the mathematical setup behind each dataset.
+BenchPhaseFlow hosts benchmark problems and convergence studies for the cut-cell CFD stack built on [Penguin.jl](https://github.com/PenguinxCutCell/Penguin.jl).
 
-## Automated Deployment
+## What’s here
+- A curated set of benchmark definitions under `problems/` (scalar diffusion, Navier–Stokes, multiphase, and conditioning studies).
+- CSV outputs in `results/` with mesh sizes, error norms, and convergence rates that accompany each benchmark.
+- Utility routines in `utils/convergence.jl` to post-process solver output and compute norms and rates.
 
-Documentation is automatically built and deployed to GitHub Pages on every push to the `main` branch via GitHub Actions. The workflow:
-1. Runs the documentation build
-2. Deploys to the `gh-pages` branch
-3. Makes the site available at the GitHub Pages URL
-
-## Updating the site locally
-
-1. Make sure the latest CSVs are available locally (for CI the `benchmark-results` branch can be fetched and copied into `results/`).
-2. Run the benchmark suite if needed:
+## Rebuild locally
+1. Run the benchmarks (produces fresh CSVs in `results/`):
    ```bash
    julia --project scripts/run_all_problems.jl
    ```
-3. Build the documentation:
+2. Build this landing page:
    ```bash
    julia --project=docs -e 'using Pkg; Pkg.instantiate(); include("docs/make.jl")'
    ```
-4. The HTML output lives in `docs/build`. Serve it locally with any static file server.
+3. Open `docs/build/index.html` in your browser.
 
-## Setting up GitHub Pages deployment
-
-To enable automated deployment, repository maintainers need to:
-1. Generate a deployment key by running in Julia:
-   ```julia
-   using DocumenterTools
-   DocumenterTools.genkeys()
-   ```
-2. Add the **public** key as a repository secret named `DOCUMENTER_KEY` in the GitHub repository settings
-3. Enable GitHub Pages in repository settings to serve from the `gh-pages` branch
-
-The following sections are generated automatically—each CSV becomes its own page containing the textual problem statement and a Markdown preview of the data table. No manual editing is required.
+## Where to look next
+- Benchmark scripts: `problems/`
+- Generated CSVs: `results/`
+- Post-processing helpers: `utils/convergence.jl`

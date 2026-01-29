@@ -10,6 +10,13 @@ Return the number of fully inside cells (cell type == 1).
 """
 count_inside_cells(capacity) = count(x -> x == 1, capacity.cell_types)
 
+"""
+    truncation_error_norms(solver, capacity, u_exact; norm=2)
+
+Compute truncation error norms by applying the discrete operator to the
+analytical solution `u_exact`. Returns L^p and L∞ residuals over all, full, and
+cut cells.
+"""
 function truncation_error_norms(solver, capacity, u_exact; norm=2)
     centroids = capacity.C_ω
     u_exact_vals = [u_exact(c...) for c in centroids]
@@ -38,8 +45,12 @@ function truncation_error_norms(solver, capacity, u_exact; norm=2)
     )
 end
 
-# Keep only indices that are at least `trim_layers` cells away from the boundary.
-# Returns `nothing` when trimming is disabled or not feasible.
+"""
+    build_interior_mask(capacity::Capacity, trim_layers::Int)
+
+Return a boolean mask that keeps cells at least `trim_layers` away from every
+boundary. Returns `nothing` when trimming is disabled or not feasible.
+"""
 function build_interior_mask(capacity::Capacity, trim_layers::Int)
     trim_layers <= 0 && return nothing
 
@@ -66,9 +77,19 @@ function build_interior_mask(capacity::Capacity, trim_layers::Int)
     return mask
 end
 
+"""
+    apply_trim(idx, mask)
+
+Filter index vector `idx` with a boolean `mask`; no-op when `mask === nothing`.
+"""
 apply_trim(idx::Vector{Int}, mask) = mask === nothing ? idx : [i for i in idx if mask[i]]
 
-# Return bounds for an interior box by trimming a margin from the mesh limits.
+"""
+    box_bounds_from_margin(capacity::Capacity{D}, margin) where D
+
+Return lower/upper bounds for an interior box obtained by trimming `margin`
+from each side of the mesh domain. Accepts scalar or `D`-tuple margins.
+"""
 function box_bounds_from_margin(capacity::Capacity{D}, margin) where D
     mesh = capacity.mesh
     margin_tuple = margin isa Number ? ntuple(_ -> Float64(margin), D) : Tuple(margin)
@@ -80,6 +101,12 @@ function box_bounds_from_margin(capacity::Capacity{D}, margin) where D
     return lower, upper
 end
 
+"""
+    build_box_mask(capacity::Capacity{D}, lower, upper) where D
+
+Build a boolean mask selecting cell centroids inside the hyper-rectangle
+defined by `lower` and `upper` bounds.
+"""
 function build_box_mask(capacity::Capacity{D}, lower::NTuple{D,Float64}, upper::NTuple{D,Float64}) where D
     mask = falses(length(capacity.C_ω))
     for (idx, c) in enumerate(capacity.C_ω)
@@ -95,12 +122,22 @@ function build_box_mask(capacity::Capacity{D}, lower::NTuple{D,Float64}, upper::
     return mask
 end
 
+"""
+    volume_sum(indices, capacity)
+
+Sum the control-volume weights `V[i,i]` for the given cell indices.
+"""
 function volume_sum(indices, capacity::Capacity)
     isempty(indices) && return 0.0
     return sum(capacity.V[i,i] for i in indices)
 end
 
-# Weighted Lp or L∞ norm helper over a subset of cells.
+"""
+    lp_norm_subset(errors, indices, pval, capacity)
+
+Weighted L^p (or L∞) norm of `errors` over the selected cell `indices`, using
+cell volumes from `capacity.V`.
+"""
 function lp_norm_subset(errors, indices, pval, capacity)
     isempty(indices) && return 0.0
     if pval == Inf
@@ -117,7 +154,12 @@ function lp_norm_subset(errors, indices, pval, capacity)
     end
 end
 
-# Relative Lp norm helper over a subset of cells.
+"""
+    relative_lp_norm_subset(errors, indices, pval, capacity, u_ana)
+
+Weighted relative L^p (or L∞) norm of `errors` over the selected cell `indices`,
+normalizing by analytical values `u_ana`.
+"""
 function relative_lp_norm_subset(errors, indices, pval, capacity, u_ana)
     isempty(indices) && return 0.0
     if pval == Inf
@@ -260,9 +302,9 @@ function check_h1_convergence(grad_analytical, solver, capacity::Capacity{D}, op
 end
 
 """
-    check_convergence_diph(u1_analytical, u2_analytical, solver,
-                           capacity1::Capacity{D}, capacity2::Capacity{D};
-                           p::Real=2, relative::Bool=false, trim_layers::Int=2) where D
+    check_convergence_diphh(u1_analytical::Function, u2_analytical::Function, solver,
+                            capacity1::Capacity{D}, capacity2::Capacity{D};
+                            p::Real=2, relative::Bool=false, trim_layers::Int=2) where D
 
 Local override of Penguin's diphasic convergence helper with dimension-agnostic
 indexing. Uses the length of each capacity rather than 1D-specific assumptions.
