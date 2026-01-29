@@ -4,7 +4,7 @@
 The analytic solution and source term are identical to the fixed case; the radius
 grows with time while Dirichlet data track the exact field on the moving boundary
 and the outer box.
-NOTE : THIS SCRIPT CURRENTLY NOT WORKING
+NOTE : MUST USE IMPLICITINTEGRATION FOR CENTROID SURFACE
 
 **CSV source:** `results/scalar/SchwartzColella3D_ExpandingSphere_Convergence.csv`
 
