@@ -2,7 +2,8 @@
 
 Diphasic 1D heat diffusion benchmark reproduced from `benchmark/Heat_2ph_1D.jl`.
 Performs a mesh-convergence study for the unsteady diphasic heat equation with
-a planar interface and writes convergence data (no plotting).
+a planar interface and writes convergence data (no plotting). This variant sweeps
+extreme diffusivity ratios (1e0 -> 1e6) and multiple He jumps.
 
 **CSV source:** `results/scalar/diphasic/Heat_2ph_1D_Convergence.csv`
 

@@ -6,7 +6,6 @@ Description missing in problems/scalar/GibouFedkiw/Heat1D.jl
 
 | method | h | lp_norm | inside_cells | inside_cells_by_dim | all_err | full_err | cut_err | empty_err | pair_order_all | pair_order_full | pair_order_cut |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GibouFedkiw_Heat1D | 0.0625 | L^2 | 9 | [11] | 0.00350697 | 0.00336508 | 0.000987455 | 0 | NaN | NaN | NaN |
-| GibouFedkiw_Heat1D | 0.03125 | L^2 | 19 | [21] | 0.000725804 | 0.000710635 | 0.00014761 | 0 | 2.27257 | 2.24346 | 2.74193 |
-| GibouFedkiw_Heat1D | 0.015625 | L^2 | 39 | [41] | 0.000219934 | 0.000217868 | 3.00758e-05 | 0 | 1.72251 | 1.70566 | 2.29511 |
-| GibouFedkiw_Heat1D | 0.0078125 | L^2 | 79 | [81] | 4.53798e-05 | 4.51439e-05 | 4.62157e-06 | 0 | 2.27695 | 2.27085 | 2.70215 |
+| GibouFedkiw_Heat1D | 0.0487805 | L^2 | 12 | [13] | 0.000455332 | 0.000405542 | 4.97901e-05 | 0 | NaN | NaN | NaN |
+| GibouFedkiw_Heat1D | 0.0246914 | L^2 | 24 | [26] | 0.00011607 | 0.000108019 | 8.05113e-06 | 0 | 2.00746 | 1.94296 | 2.67597 |
+| GibouFedkiw_Heat1D | 0.0124224 | L^2 | 50 | [51] | 2.89075e-05 | 2.84885e-05 | 4.18996e-07 | 0 | 2.02355 | 1.94016 | 4.30262 |

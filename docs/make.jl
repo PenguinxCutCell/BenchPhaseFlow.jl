@@ -160,7 +160,12 @@ if !isempty(result_entries)
     push!(pages, "Results" => [entry.nav_title => joinpath("results", entry.page_file) for entry in result_entries])
 end
 
-html = Documenter.HTML(size_threshold=nothing, size_threshold_warn=250_000, inventory_version="0.1.0")
+html = Documenter.HTML(
+    size_threshold=nothing, 
+    size_threshold_warn=250_000, 
+    inventory_version="0.1.0",
+    repolink="https://github.com/PenguinxCutCell/BenchPhaseFlow.jl",
+)
 
 makedocs(
     sitename = "BenchPhaseFlow Results",
@@ -168,4 +173,11 @@ makedocs(
     pages = pages,
     clean = true,
     format = html,
+    repo = Documenter.Remotes.GitHub("PenguinxCutCell", "BenchPhaseFlow.jl"),
+)
+
+deploydocs(
+    repo = "github.com/PenguinxCutCell/BenchPhaseFlow.jl.git",
+    devbranch = "main",
+    push_preview = true,
 )
