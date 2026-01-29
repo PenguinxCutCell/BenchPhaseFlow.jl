@@ -25,12 +25,9 @@ Documentation is automatically built and deployed to GitHub Pages on every push 
 ## Setting up GitHub Pages deployment
 
 To enable automated deployment, repository maintainers need to:
-1. Generate a deployment key by running in Julia:
-   ```julia
-   using DocumenterTools
-   DocumenterTools.genkeys()
-   ```
-2. Add the **public** key as a repository secret named `DOCUMENTER_KEY` in the GitHub repository settings
-3. Enable GitHub Pages in repository settings to serve from the `gh-pages` branch
+1. Enable GitHub Pages in repository settings to serve from the `gh-pages` branch
+2. Ensure the GitHub Actions workflow has the necessary permissions (already configured in `.github/workflows/docs.yml`)
+
+The deployment uses the GitHub Actions built-in `GITHUB_TOKEN` for authentication, so no additional secrets or SSH keys are required.
 
 The following sections are generated automatically—each CSV becomes its own page containing the textual problem statement and a Markdown preview of the data table. No manual editing is required.
