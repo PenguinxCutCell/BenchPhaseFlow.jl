@@ -34,6 +34,9 @@ end
 
 pages = Any[
     "Overview" => "index.md",
+    "Articles" => [
+        "BenchPhaseFlow Articles" => "articles/benchphaseflow-article1.md",
+    ],
 
 ]
 
