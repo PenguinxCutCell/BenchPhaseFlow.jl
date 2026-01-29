@@ -45,8 +45,8 @@ function map_field_to_mesh(src_xs, src_ys, field, dst_xs, dst_ys)
 end
 
 function run_hotcylinder_case(umax;
-    nx=64,
-    ny=64,
+    nx=192,
+    ny=96,
     channel_length=10.0,
     channel_height=10.0,
     x0=-0.5,
@@ -183,7 +183,7 @@ function main(;
     kappa=1.0e-2,
     t_end=10.0,
     relative_tol=0.2,
-    csv_path=nothing
+    csv_path=BENCH_ROOT * "/results/NavierStokesCoupled/HotCylinder_ReSweep.csv"
 )
     cases = read_hotcylinder_table()
     results = NamedTuple[]

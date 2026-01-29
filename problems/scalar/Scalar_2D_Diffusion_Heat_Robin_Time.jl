@@ -119,6 +119,13 @@ end
 
 function write_convergence_csv(method_name, data; csv_path=nothing)
     df = make_convergence_dataframe(method_name, data)
+    n = nrow(df)
+    df.order_all = fill(data.orders.all, n)
+    df.order_full = fill(data.orders.full, n)
+    df.order_cut = fill(data.orders.cut, n)
+    df.order_all_fit = fill(data.orders.all_all, n)
+    df.order_full_fit = fill(data.orders.full_all, n)
+    df.order_cut_fit = fill(data.orders.cut_all, n)
     results_dir = isnothing(csv_path) ? joinpath(BENCH_ROOT, "results", "scalar") : dirname(csv_path)
     mkpath(results_dir)
     csv_out = isnothing(csv_path) ? joinpath(results_dir, "$(method_name)_Temporal.csv") : csv_path
@@ -126,11 +133,11 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
     return (csv_path = csv_out, table = df)
 end
 
-function main(; csv_path_BE=nothing, csv_path_CN=nothing, dt_list=nothing, nx=256, ny=256)
+function main(; csv_path_BE=nothing, csv_path_CN=nothing, dt_list=nothing, nx=512, ny=512)
     radius = 1.0
     center = (2.0, 2.0)
     Tend = 0.1
-    dt_vals = isnothing(dt_list) ? [0.02, 0.01, 0.005, 0.0025] : dt_list
+    dt_vals = isnothing(dt_list) ? [0.16, 0.08, 0.04, 0.02, 0.01, 0.005, 0.0025] : dt_list
     u_analytical = robin_radial_heat_solution(center, radius; t=Tend)
 
     data_BE = run_temporal_convergence(dt_vals, "BE", nx, ny, radius, center, u_analytical; Tend=Tend)

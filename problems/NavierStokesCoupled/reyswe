@@ -1,0 +1,4 @@
+Re_D = 0.40, Umax = 1.00, Nu = 2.198 (ref 2.109), rel err = 0.042
+Re_D = 0.80, Umax = 2.00, Nu = 2.458 (ref 2.859), rel err = 0.140
+Re_D = 2.00, Umax = 5.00, Nu = 2.982 (ref 4.347), rel err = 0.314
+Re_D = 4.00, Umax = 10.00, Nu = 3.580 (ref 6.024), rel err = 0.406
