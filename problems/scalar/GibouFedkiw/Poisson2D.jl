@@ -23,14 +23,14 @@ function run_poisson2d(nx_list, ny_list; lx=2.0, ly=2.0, x0=-1.0, y0=-1.0)
 
     body = (x,y,_=0)->star_levelset(x,y)
     u_exact(x,y) = x^2 + y^2
-    f_source(x,y,z) = 4.0
+    f_source(x,y,z) = -4.0
 
     for (nx, ny) in zip(nx_list, ny_list)
         mesh = Penguin.Mesh((nx,ny),(lx,ly),(x0,y0))
-        capacity = Capacity(body, mesh; method="VOFI", compute_centroids=true)
+        capacity = Capacity(body, mesh; method="VOFI", integration_method=:vofijul, compute_centroids=true)
         operator = DiffusionOps(capacity)
 
-        bc = Dirichlet((x,y)->u_exact(x,y))
+        bc = Dirichlet((x,y,_=0)->u_exact(x,y))
         bc_b = BorderConditions(Dict(:left=>bc,:right=>bc,:top=>bc,:bottom=>bc))
         phase = Phase(capacity, operator, (x,y,z)->f_source(x,y,z), (x,y,z)->1.0)
 
@@ -75,7 +75,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing, ny_list=nothing)
-    nx_vals = isnothing(nx_list) ? [16, 32, 64] : nx_list
+    nx_vals = isnothing(nx_list) ? [8, 16, 32, 64, 128] : nx_list
     ny_vals = isnothing(ny_list) ? nx_vals : ny_list
     data = run_poisson2d(nx_vals, ny_vals)
     csv_info = write_convergence_csv("GibouFedkiw_Poisson2D", data; csv_path=csv_path)

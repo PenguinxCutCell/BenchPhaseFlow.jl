@@ -12,7 +12,7 @@ Scalar 2D heat equation with an oscillating circular interface. The radius
 oscillates periodically, and the exact solution is imposed on the moving
 boundary. This script performs a mesh convergence study and writes a CSV
 summary without producing plots or timestamped folders.
-# Might need to adjust interface centroid computation for moving bodies : bary_interface vs compute_interface_centroid()
+# Might need to adjust interface centroid computation for moving bodies : compute_interface_centroid()
 """
 
 const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
@@ -81,8 +81,8 @@ function run_moving_heat_convergence(
         u0ᵧ = zeros(ndofs)
         u0 = vcat(u0ₒ, u0ᵧ)
 
-        solver = MovingDiffusionUnsteadyMono(phase, bc_b, interface_bc, Δt, u0, mesh, "BE")
-        solve_MovingDiffusionUnsteadyMono!(solver, phase, body, Δt, Tstart, Tend, bc_b, interface_bc, mesh, "CN"; method=Base.:\)
+        solver = MovingDiffusionUnsteadyMono(phase, bc_b, interface_bc, Δt, Tstart, u0, mesh, "BE")
+        solve_MovingDiffusionUnsteadyMono!(solver, phase, body, Δt, Tstart, Tend, bc_b, interface_bc, mesh, "CN"; method=Base.:\, geometry_method="VOFI", integration_method=:vofijul)
 
         R_tend = oscillating_radius(Tend, r_mean, r_amp, period)
         body_tend = (x,y,_=0) -> sqrt((x-center[1])^2 + (y-center[2])^2) - R_tend

@@ -74,7 +74,7 @@ function run_moving_heat_convergence_3d(
         u0ᵧ = zeros(ndofs)
         u0 = vcat(u0ₒ, u0ᵧ)
 
-        solver = MovingDiffusionUnsteadyMono(phase, bc_b, interface_bc, Δt, u0, mesh, "BE")
+        solver = MovingDiffusionUnsteadyMono(phase, bc_b, interface_bc, Δt, Tstart, u0, mesh, "BE")
         solve_MovingDiffusionUnsteadyMono!(solver, phase, body, Δt, Tstart, Tend, bc_b, interface_bc, mesh, "BE";
             method=Base.:\, geometry_method="VOFI", integration_method=:vofijul, compute_centroids=true)
 

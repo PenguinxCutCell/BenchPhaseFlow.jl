@@ -1,3 +1,15 @@
+Table I - 1D Poisson Equation - uxx=f
+Number of Points    L1-error    order   L-inf-error   order
+41  4.422e-4  -      9.236e-4  -
+81  1.132e-4  1.97  2.654e-4  1.79
+161 2.736e-5  2.04  7.306e-5 1.86
+
+Table III - 2D Poisson Equation - \Delta u = f
+Number of Points    L1-error    order   L-inf-error   order
+101x101  7.329e-5   -   9.777e-5    -
+201x201  1.776e-5 2.04  2.427e-5    2.01
+401x401  4.714e-6   1.92    6.178e-6    1.97
+
 Table VII - 1D Heat Equation - Backward Euler - \Delta t = \Delta x
 Number of Points    L1-error    order   L-inf-error   order
 41  1.443e-2  -      2.222e-2  -

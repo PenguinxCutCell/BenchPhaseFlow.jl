@@ -52,6 +52,7 @@ function run_fixed_disk_convergence(
     for (nx, ny) in zip(nx_list, ny_list)
         mesh = Penguin.Mesh((nx, ny), (lx, ly), (0.0, 0.0))
         Δt = 0.5 * (lx / nx)^2
+        Tstart = Δt
 
         body = fixed_disk(center)
         STmesh = Penguin.SpaceTimeMesh(mesh, [0.0, Δt])
@@ -64,13 +65,13 @@ function run_fixed_disk_convergence(
         phase = Phase(capacity, operator, source_term, (x,y,z)->1.0)
 
         ndofs = (nx + 1)*(ny + 1)
-        u0ₒ = [a_exact(mesh.nodes[1][i], mesh.nodes[2][j], Δt) for j in 1:ny+1, i in 1:nx+1]
+        u0ₒ = [a_exact(mesh.nodes[1][i], mesh.nodes[2][j], Tstart) for j in 1:ny+1, i in 1:nx+1]
         u0ₒ = reshape(u0ₒ, :)
         u0ᵧ = zeros(ndofs)
         u0 = vcat(u0ₒ, u0ᵧ)
 
-        solver = MovingDiffusionUnsteadyMono(phase, bc_b, interface_bc, Δt, u0, mesh, "BE")
-        solve_MovingDiffusionUnsteadyMono!(solver, phase, body, Δt, Δt, Tend, bc_b, interface_bc, mesh, "BE"; method=Base.:\)
+        solver = MovingDiffusionUnsteadyMono(phase, bc_b, interface_bc, Δt, Tstart, u0, mesh, "BE")
+        solve_MovingDiffusionUnsteadyMono!(solver, phase, body, Δt, Tstart, Tend, bc_b, interface_bc, mesh, "BE"; method=Base.:\)
 
         body_tend = (x,y,_=0)->sqrt((x-center[1])^2 + (y-center[2])^2) - radius()
         capacity_tend = Capacity(body_tend, mesh; compute_centroids=false)

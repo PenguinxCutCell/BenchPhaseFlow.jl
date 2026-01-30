@@ -62,7 +62,7 @@ function run_moving_heat_convergence(
         u0ᵧ = ones(ndofs)
         u0 = vcat(u0ₒ, u0ᵧ)
 
-        solver = MovingDiffusionUnsteadyMono(phase, bc_b, interface_bc, Δt, u0, mesh, "BE")
+        solver = MovingDiffusionUnsteadyMono(phase, bc_b, interface_bc, Δt, Tstart, u0, mesh, "BE")
         solve_MovingDiffusionUnsteadyMono!(solver, phase, body, Δt, Tstart, Tend, bc_b, interface_bc, mesh, "BE"; method=Base.:\)
 
         R_tend = moving_radius(Tend, r_mean, r_amp, period)
