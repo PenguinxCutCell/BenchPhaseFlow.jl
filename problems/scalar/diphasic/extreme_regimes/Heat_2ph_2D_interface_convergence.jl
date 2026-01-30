@@ -19,13 +19,13 @@ include(joinpath(BENCH_ROOT, "utils", "convergence.jl"))
 
 const BASE_DL = 1.0
 const DEFAULT_HE_DIFFUSIVITY_CASES = Dict(
-    1e-3 => [1e0, 1e2, 1e4, 1e6],
-    1e-2 => [1e0, 1e2, 1e4, 1e6],
-    1e-1 => [1e0, 1e2, 1e4, 1e6],
-    1e0  => [1e0, 1e2, 1e4, 1e6],
-    1e1  => [1e0, 1e2, 1e4, 1e6],
-    1e2  => [1e0, 1e2, 1e4, 1e6],
-    1e3  => [1e0, 1e2, 1e4, 1e6]
+    1e-3 => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e-2 => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e-1 => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e0  => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e1  => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e2  => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e3  => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6]
 )
 
 struct Heat2Ph2DParams

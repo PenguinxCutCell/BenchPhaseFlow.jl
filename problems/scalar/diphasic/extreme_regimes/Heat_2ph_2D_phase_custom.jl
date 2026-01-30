@@ -6,6 +6,7 @@ using CSV
 using SpecialFunctions
 using QuadGK
 using Test
+using Printf
 
 """
 Diphasic 2D heat diffusion benchmark reproduced from `benchmark/Heat_2ph_2D.jl`.
@@ -91,11 +92,86 @@ function heat2d_phase2_solution(params::Heat2Ph2DParams)
     end
 end
 
+function save_cell_data(nx, solver, capacity1, capacity2, u1_exact, u2_exact, params::Heat2Ph2DParams, output_dir)
+    """Save cell data for a given mesh resolution"""
+    # Extract solution vectors - inside (phase1) and outside (phase2) solutions
+    ndofs = length(capacity1.C_ω)
+    state = solver.states[end]
+    cg_inside = state[1:ndofs]                 # phase 1 bulk values
+    cl_outside = state[2*ndofs+1:3*ndofs]       # phase 2 bulk values
+
+    # Get cell centroids from both capacities
+    centroids1 = capacity1.C_ω
+    centroids2 = capacity2.C_ω
+
+    # Accumulate weighted L2 (mean-square) errors using uniform ΔxΔy
+    dx = capacity1.mesh.nodes[1][2] - capacity1.mesh.nodes[1][1]
+    dy = capacity1.mesh.nodes[2][2] - capacity1.mesh.nodes[2][1]
+    dA = dx * dy
+    sum_w_inside = 0.0
+    sum_werr2_inside = 0.0
+    sum_w_outside = 0.0
+    sum_werr2_outside = 0.0
+
+    # Save inside cylinder data (drop only the last row)
+    open(joinpath(output_dir, "mesh_nx$(nx)_inside_cell_data.txt"), "w") do io
+        write(io, "x_pos\ty_pos\tradius\tcg_num\tcg_exa\n")
+
+        for cell_idx in 1:(length(centroids1) - 1)
+            centroid = centroids1[cell_idx]
+            x_center = centroid[1]
+            y_center = centroid[2]
+
+            r = hypot(x_center - params.center[1], y_center - params.center[2])
+            cg_val = cg_inside[cell_idx]
+            cg_exact_val = u1_exact(x_center, y_center)
+
+            @printf(io, "%.12e\t%.12e\t%.12e\t%.12e\t%.12e\n",
+                    x_center, y_center, r, cg_val, cg_exact_val)
+
+            err = cg_exact_val - cg_val
+            sum_w_inside += dA
+            sum_werr2_inside += dA * err * err
+        end
+    end
+
+    # Save outside cylinder data (drop only the last row)
+    open(joinpath(output_dir, "mesh_nx$(nx)_outside_cell_data.txt"), "w") do io
+        write(io, "x_pos\ty_pos\tradius\tcl_num\tcl_exa\n")
+
+        for cell_idx in 1:(length(centroids2) - 1)
+            centroid = centroids2[cell_idx]
+            x_center = centroid[1]
+            y_center = centroid[2]
+
+            r = hypot(x_center - params.center[1], y_center - params.center[2])
+            cl_val = cl_outside[cell_idx]
+            cl_exact_val = u2_exact(x_center, y_center)
+
+            @printf(io, "%.12e\t%.12e\t%.12e\t%.12e\t%.12e\n",
+                    x_center, y_center, r, cl_val, cl_exact_val)
+
+            err = cl_exact_val - cl_val
+            sum_w_outside += dA
+            sum_werr2_outside += dA * err * err
+        end
+    end
+
+    l2_inside = sum_w_inside > 0 ? sqrt(sum_werr2_inside / sum_w_inside) : NaN
+    l2_outside = sum_w_outside > 0 ? sqrt(sum_werr2_outside / sum_w_outside) : NaN
+    open(joinpath(output_dir, "mesh_nx$(nx)_l2_norms.txt"), "w") do io
+        write(io, "phase\tl2_rms\n")
+        @printf(io, "inside\t%.6e\n", l2_inside)
+        @printf(io, "outside\t%.6e\n", l2_outside)
+    end
+end
+
 function run_heat_2ph_2d(
     nx_list::Vector{Int};
     params::Heat2Ph2DParams=Heat2Ph2DParams(),
     norm::Real=2,
-    relative::Bool=false
+    relative::Bool=false,
+    save_cell_data_flag::Bool=true
 )
     h_vals = Float64[]
     dt_vals = Float64[]
@@ -118,6 +194,12 @@ function run_heat_2ph_2d(
 
     u1_exact = heat2d_phase1_solution(params)
     u2_exact = heat2d_phase2_solution(params)
+    
+    # Create output directory for cell data
+    cell_data_dir = joinpath(BENCH_ROOT, "results", "scalar", "diphasic", "extreme_regimes", "cell_data")
+    if save_cell_data_flag
+        mkpath(cell_data_dir)
+    end
 
     for nx in nx_list
         ny = nx
@@ -144,11 +226,11 @@ function run_heat_2ph_2d(
 
         ndofs = (nx + 1) * (ny + 1)
         u0 = vcat(ones(ndofs), ones(ndofs), zeros(ndofs), zeros(ndofs))
-        Δt = params.Tend / nx
+        Δt = params.Tend / (2nx)
         push!(dt_vals, Δt)
 
-        solver = DiffusionUnsteadyDiph(phase1, phase2, bc_b, ic, Δt, u0, "BE")
-        solve_DiffusionUnsteadyDiph!(solver, phase1, phase2, Δt, params.Tend, bc_b, ic, "BE"; method=Base.:\)
+        solver = DiffusionUnsteadyDiph(phase1, phase2, bc_b, ic, Δt, u0, "CN")
+        solve_DiffusionUnsteadyDiph!(solver, phase1, phase2, Δt, params.Tend, bc_b, ic, "CN"; method=Base.:\)
         push!(solver.states, solver.x)
 
         _, _, global_errs, full_errs, cut_errs, empty_errs =
@@ -174,6 +256,11 @@ function run_heat_2ph_2d(
         push!(inside_cells_by_dim, [inside1, inside2])
         push!(inside_cells_phase1, inside1)
         push!(inside_cells_phase2, inside2)
+        
+        # Save cell data for this mesh
+        if save_cell_data_flag
+            save_cell_data(nx, solver, capacity1, capacity2, u1_exact, u2_exact, params, cell_data_dir)
+        end
     end
 
     return (
@@ -214,7 +301,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing, params::Heat2Ph2DParams=Heat2Ph2DParams())
-    nx_vals = isnothing(nx_list) ? [8, 16, 32, 64, 128] : nx_list
+    nx_vals = isnothing(nx_list) ? [8, 16, 32, 64, 128, 256] : nx_list
     data = run_heat_2ph_2d(nx_vals; params=params)
     csv_info = write_convergence_csv("Heat_2ph_2D_phase_custom_He$(params.He)_Ratio$(params.Dg/params.Dl)", data; csv_path=csv_path)
     return (data = data, csv_path = csv_info.csv_path, table = csv_info.table)

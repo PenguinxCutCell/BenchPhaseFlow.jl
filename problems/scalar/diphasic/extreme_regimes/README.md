@@ -1,5 +1,6 @@
 # Extremes regimes for the diphasic heat equation
 
+TO BE UPDATED
 This folder contains benchmarks for extreme regimes of the diphasic heat equation, where the diffusivity ratio and henry jump are very large or very small.
 
 ## 1D Diphasic Heat Equation

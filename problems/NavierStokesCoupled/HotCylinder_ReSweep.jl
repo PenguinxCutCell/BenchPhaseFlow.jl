@@ -14,7 +14,7 @@ Navier-Stokes (Picard), then an unsteady advection-diffusion run with a hot
 cylinder wall. Compute mean Nusselt number and compare to the reference table.
 """
 
-const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", "..", ".."))
+const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", ".."))
 const HOTCYLINDER_DATA = joinpath(@__DIR__, "hotcylinder.txt")
 
 function read_hotcylinder_table(path::AbstractString=HOTCYLINDER_DATA)
@@ -46,12 +46,12 @@ end
 
 function run_hotcylinder_case(umax;
     nx=192,
-    ny=96,
+    ny=192,
     channel_length=10.0,
     channel_height=10.0,
-    x0=-0.5,
-    y0=-0.5,
-    circle_center=(0.5, 0.0),
+    x0=-5.0,
+    y0=-5.0,
+    circle_center=(0.0, 0.0),
     circle_radius=0.2,
     mu=1.0,
     rho=1.0,
@@ -183,7 +183,7 @@ function main(;
     kappa=1.0e-2,
     t_end=10.0,
     relative_tol=0.2,
-    csv_path=BENCH_ROOT * "/results/NavierStokesCoupled/HotCylinder_ReSweep.csv"
+    csv_path=joinpath(BENCH_ROOT, "results", "NavierStokesCoupled", "HotCylinder_ReSweep.csv")
 )
     cases = read_hotcylinder_table()
     results = NamedTuple[]

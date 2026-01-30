@@ -18,13 +18,13 @@ include(joinpath(BENCH_ROOT, "utils", "convergence.jl"))
 
 const BASE_DL = 1.0
 const DEFAULT_HE_DIFFUSIVITY_CASES = Dict(
-    1e-3 => [1e0, 1e2, 1e4, 1e6],
-    1e-2 => [1e0, 1e2, 1e4, 1e6],
-    1e-1 => [1e0, 1e2, 1e4, 1e6],
-    1e0  => [1e0, 1e2, 1e4, 1e6],
-    1e1  => [1e0, 1e2, 1e4, 1e6],
-    1e2  => [1e0, 1e2, 1e4, 1e6],
-    1e3  => [1e0, 1e2, 1e4, 1e6]
+    1e-3 => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e-2 => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e-1 => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e0  => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e1  => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e2  => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6],
+    1e3  => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6]
 )
 
 struct Heat2Ph2DParams
@@ -160,7 +160,7 @@ function run_heat_2ph_2d(
         push!(dt_vals, Δt)
 
         solver = DiffusionUnsteadyDiph(phase1, phase2, bc_b, ic, Δt, u0, "BE")
-        solve_DiffusionUnsteadyDiph!(solver, phase1, phase2, Δt, params.Tend, bc_b, ic, "CN"; method=Base.:\)
+        solve_DiffusionUnsteadyDiph!(solver, phase1, phase2, Δt, params.Tend, bc_b, ic, "BE"; method=Base.:\)
         push!(solver.states, solver.x)
 
         _, _, global_errs, full_errs, cut_errs, empty_errs =

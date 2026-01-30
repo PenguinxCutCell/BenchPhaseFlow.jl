@@ -151,7 +151,7 @@ function run_heat_2ph_2d(
         push!(dt_vals, Δt)
 
         solver = DiffusionUnsteadyDiph(phase1, phase2, bc_b, ic, Δt, u0, "BE")
-        solve_DiffusionUnsteadyDiph!(solver, phase1, phase2, Δt, params.Tend, bc_b, ic, "CN"; method=Base.:\)
+        solve_DiffusionUnsteadyDiph!(solver, phase1, phase2, Δt, params.Tend, bc_b, ic, "BE"; method=Base.:\)
         push!(solver.states, solver.x)
 
         _, _, global_errs, full_errs, cut_errs, empty_errs =
