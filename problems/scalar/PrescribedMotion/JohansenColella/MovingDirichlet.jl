@@ -105,7 +105,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing, ny_list=nothing)
-    nx_vals = isnothing(nx_list) ? [4, 9, 16, 33, 63, 127] : nx_list
+    nx_vals = isnothing(nx_list) ? [4, 9, 16, 33, 63, 127, 256] : nx_list
     ny_vals = isnothing(ny_list) ? nx_vals : ny_list
     Tend = 0.1
 
