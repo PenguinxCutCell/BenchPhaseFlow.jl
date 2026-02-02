@@ -12,7 +12,7 @@ Sweeps ω from 2π to 32π and writes convergence data to CSV for each case.
 const BENCH_ROOT = normpath(joinpath(@__DIR__, "..", "..", ".."))
 include(joinpath(BENCH_ROOT, "utils", "convergence.jl"))
 
-const DEFAULT_OMEGA_SWEEP = [2π, 4π, 8π, 16π, 32π]
+const DEFAULT_OMEGA_SWEEP = [4π, 8π, 16π, 32π]
 
 struct MovingVerticalParams
     lx::Float64
