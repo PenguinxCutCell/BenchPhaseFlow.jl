@@ -31,7 +31,7 @@ struct Heat2Ph2DParams
     cl0::Float64
 end
 
-Heat2Ph2DParams(; lx=8.0, ly=8.0, x0=0.0, y0=0.0, center=(4.0, 4.0),
+Heat2Ph2DParams(; lx=16.0, ly=16.0, x0=0.0, y0=0.0, center=(8.0+0.125/pi, 8.0+0.125*sqrt(3/2)),
                 radius=1.0, Tend=3.2, Dg=17.416, Dl=0.17416, He=1/30.0,
                 cg0=1.0, cl0=0.0) =
     Heat2Ph2DParams(lx, ly, x0, y0, center, radius, Tend, Dg, Dl, He, cg0, cl0)
@@ -196,7 +196,7 @@ function run_heat_2ph_2d(
     u2_exact = heat2d_phase2_solution(params)
     
     # Create output directory for cell data
-    cell_data_dir = joinpath(BENCH_ROOT, "results", "scalar", "diphasic", "extreme_regimes", "cell_data")
+    cell_data_dir = joinpath(BENCH_ROOT, "results", "scalar", "diphasic", "extreme_regimes", "cell_data_shifted_large_He$(params.He)_Ratio$(params.Dg/params.Dl)")
     if save_cell_data_flag
         mkpath(cell_data_dir)
     end
@@ -204,10 +204,10 @@ function run_heat_2ph_2d(
     for nx in nx_list
         ny = nx
         mesh = Penguin.Mesh((nx, ny), (params.lx, params.ly), (params.x0, params.y0))
-        circle = (x, y, _=0) -> hypot(x - params.center[1], y - params.center[2]) - params.radius
-        circle_c = (x, y, _=0) -> params.radius - hypot(x - params.center[1], y - params.center[2])
-        capacity1 = Capacity(circle, mesh)
-        capacity2 = Capacity(circle_c, mesh)
+        circle = (x, y, _=0) -> sqrt((x - params.center[1])^2 + (y - params.center[2])^2) - params.radius
+        circle_c = (x, y, _=0) -> params.radius - sqrt((x - params.center[1])^2 + (y - params.center[2])^2)
+        capacity1 = Capacity(circle, mesh; method="ImplicitIntegration", tol=eps())
+        capacity2 = Capacity(circle_c, mesh; method="ImplicitIntegration", tol=eps())
         operator1 = DiffusionOps(capacity1)
         operator2 = DiffusionOps(capacity2)
 
@@ -301,7 +301,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing, params::Heat2Ph2DParams=Heat2Ph2DParams())
-    nx_vals = isnothing(nx_list) ? [8, 16, 32, 64, 128, 256] : nx_list
+    nx_vals = isnothing(nx_list) ? [16, 32, 64, 128, 256, 512] : nx_list
     data = run_heat_2ph_2d(nx_vals; params=params)
     csv_info = write_convergence_csv("Heat_2ph_2D_phase_custom_He$(params.He)_Ratio$(params.Dg/params.Dl)", data; csv_path=csv_path)
     return (data = data, csv_path = csv_info.csv_path, table = csv_info.table)
