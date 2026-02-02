@@ -32,7 +32,7 @@ struct Heat2Ph2DParams
 end
 
 Heat2Ph2DParams(; lx=16.0, ly=16.0, x0=0.0, y0=0.0, center=(8.0+0.125/pi, 8.0+0.125*sqrt(3/2)),
-                radius=1.0, Tend=3.2, Dg=17.416, Dl=0.17416, He=1/30.0,
+                radius=1.0, Tend=3.0, Dg=17.416, Dl=0.17416, He=1/30.0,
                 cg0=1.0, cl0=0.0) =
     Heat2Ph2DParams(lx, ly, x0, y0, center, radius, Tend, Dg, Dl, He, cg0, cl0)
 
@@ -206,8 +206,8 @@ function run_heat_2ph_2d(
         mesh = Penguin.Mesh((nx, ny), (params.lx, params.ly), (params.x0, params.y0))
         circle = (x, y, _=0) -> sqrt((x - params.center[1])^2 + (y - params.center[2])^2) - params.radius
         circle_c = (x, y, _=0) -> params.radius - sqrt((x - params.center[1])^2 + (y - params.center[2])^2)
-        capacity1 = Capacity(circle, mesh; method="ImplicitIntegration", tol=eps())
-        capacity2 = Capacity(circle_c, mesh; method="ImplicitIntegration", tol=eps())
+        capacity1 = Capacity(circle, mesh)
+        capacity2 = Capacity(circle_c, mesh)
         operator1 = DiffusionOps(capacity1)
         operator2 = DiffusionOps(capacity2)
 
