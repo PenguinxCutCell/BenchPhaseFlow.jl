@@ -104,6 +104,12 @@ function run_heat_robin_convergence_3d(
     err_full_vals = Float64[]
     err_cut_vals = Float64[]
     err_empty_vals = Float64[]
+    trunc_lp_all = Float64[]
+    trunc_lp_full = Float64[]
+    trunc_lp_cut = Float64[]
+    trunc_linf_all = Float64[]
+    trunc_linf_full = Float64[]
+    trunc_linf_cut = Float64[]
     inside_cells = Int[]
     inside_cells_by_dim = Vector{Vector{Int}}()
     last_solver = nothing
@@ -140,12 +146,20 @@ function run_heat_robin_convergence_3d(
         solve_DiffusionUnsteadyMono!(solver, phase, Δt, Tend, bc_b, bc_boundary, "CN"; method=Base.:\)
         _, _, global_err, full_err, cut_err, empty_err =
             check_convergence(u_analytical, solver, capacity, norm)
+        
+        trunc = truncation_error_norms(solver, capacity, u_analytical)
 
         push!(h_vals, min(Δx, Δy, Δz))
         push!(err_vals, global_err)
         push!(err_full_vals, full_err)
         push!(err_cut_vals, cut_err)
         push!(err_empty_vals, empty_err)
+        push!(trunc_lp_all, trunc.lp_all)
+        push!(trunc_lp_full, trunc.lp_full)
+        push!(trunc_lp_cut, trunc.lp_cut)
+        push!(trunc_linf_all, trunc.linf_all)
+        push!(trunc_linf_full, trunc.linf_full)
+        push!(trunc_linf_cut, trunc.linf_cut)
         push!(inside_cells, count_inside_cells(capacity))
         coverage_x = ceil(Int, 2 * radius / Δx)
         coverage_y = ceil(Int, 2 * radius / Δy)
@@ -161,9 +175,17 @@ function run_heat_robin_convergence_3d(
         err_full_vals = err_full_vals,
         err_cut_vals = err_cut_vals,
         err_empty_vals = err_empty_vals,
+        trunc_lp_all = trunc_lp_all,
+        trunc_lp_full = trunc_lp_full,
+        trunc_lp_cut = trunc_lp_cut,
+        trunc_linf_all = trunc_linf_all,
+        trunc_linf_full = trunc_linf_full,
+        trunc_linf_cut = trunc_linf_cut,
         inside_cells = inside_cells,
         inside_cells_by_dim = inside_cells_by_dim,
         orders = compute_orders(h_vals, err_vals, err_full_vals, err_cut_vals),
+        trunc_orders_lp = compute_orders(h_vals, trunc_lp_all, trunc_lp_full, trunc_lp_cut),
+        trunc_orders_linf = compute_orders(h_vals, trunc_linf_all, trunc_linf_full, trunc_linf_cut),
         norm = norm,
         last_solver = last_solver,
         last_capacity = last_capacity
@@ -262,7 +284,7 @@ function main(; csv_path=nothing, nx_list=nothing, ny_list=nothing, nz_list=noth
     ny_vals = isnothing(ny_list) ? nx_vals : ny_list
     nz_vals = isnothing(nz_list) ? nx_vals : nz_list
     radius = 1.0
-    center = (2.0, 2.0, 2.0)
+    center = (2.01, 2.01, 2.01)
     Tend = 0.1
     k = 1.0
     u_analytical = robin_spherical_heat_solution(center, radius; t=Tend, k=k, a=1.0, w0=1.0, Nroots=200)

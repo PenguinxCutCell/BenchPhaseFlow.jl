@@ -31,8 +31,8 @@ struct Heat2Ph2DParams
     cl0::Float64
 end
 
-Heat2Ph2DParams(; lx=16.0, ly=16.0, x0=0.0, y0=0.0, center=(8.0+0.125/pi, 8.0+0.125*sqrt(3/2)),
-                radius=1.0, Tend=3.0, Dg=17.416, Dl=0.17416, He=1/30.0,
+Heat2Ph2DParams(; lx=8.0, ly=8.0, x0=0.0, y0=0.0, center=(4.0+0.125/pi, 4.0+0.125*sqrt(3/2)),
+                radius=1.0, Tend=3.2, Dg=17.416, Dl=0.17416, He=1/30.0,
                 cg0=1.0, cl0=0.0) =
     Heat2Ph2DParams(lx, ly, x0, y0, center, radius, Tend, Dg, Dl, He, cg0, cl0)
 
@@ -166,6 +166,54 @@ function save_cell_data(nx, solver, capacity1, capacity2, u1_exact, u2_exact, pa
     end
 end
 
+function save_interface_cell_data(nx, solver, capacity1, capacity2, operator1, operator2, params::Heat2Ph2DParams, output_dir)
+    """Save interface flux (Q, Q_c) and interfacial concentrations (Tgamma, Tgamma_c)"""
+    n = prod(operator1.size)
+    state = solver.states[end]
+    Tω = @view state[1:n]
+    Tgamma = @view state[n+1:2n]
+    Tω_c = @view state[2n+1:3n]
+    Tgamma_c = @view state[3n+1:4n]
+
+    Q = params.Dg * operator1.H' * operator1.Wꜝ * (operator1.G * Tω + operator1.H * Tgamma)
+    Q_c = params.Dl * operator2.H' * operator2.Wꜝ * (operator2.G * Tω_c + operator2.H * Tgamma_c)
+
+    Γ = diag(capacity1.Γ)
+    Γ_c = diag(capacity2.Γ)
+    mask_iface = .!isnan.(Γ) .& (Γ .> 0.0)
+    mask_iface_c = .!isnan.(Γ_c) .& (Γ_c .> 0.0)
+
+    centroids1 = capacity1.C_γ
+    centroids2 = capacity2.C_γ
+
+    # use the word inside
+    open(joinpath(output_dir, "mesh_nx$(nx)_interface_inside_data.txt"), "w") do io
+        write(io, "x_pos\ty_pos\tradius\tGamma\tTgamma\tQ\n")
+        for idx in eachindex(Γ)
+            mask_iface[idx] || continue
+            centroid = centroids1[idx]
+            x_center = centroid[1]
+            y_center = centroid[2]
+            r = hypot(x_center - params.center[1], y_center - params.center[2])
+            @printf(io, "%.12e\t%.12e\t%.12e\t%.12e\t%.12e\t%.12e\n",
+                    x_center, y_center, r, Γ[idx], Tgamma[idx], Q[idx])
+        end
+    end
+
+    open(joinpath(output_dir, "mesh_nx$(nx)_interface_outside_data.txt"), "w") do io
+        write(io, "x_pos\ty_pos\tradius\tGamma\tTgamma_c\tQ_c\n")
+        for idx in eachindex(Γ_c)
+            mask_iface_c[idx] || continue
+            centroid = centroids2[idx]
+            x_center = centroid[1]
+            y_center = centroid[2]
+            r = hypot(x_center - params.center[1], y_center - params.center[2])
+            @printf(io, "%.12e\t%.12e\t%.12e\t%.12e\t%.12e\t%.12e\n",
+                    x_center, y_center, r, Γ_c[idx], Tgamma_c[idx], Q_c[idx])
+        end
+    end
+end
+
 function run_heat_2ph_2d(
     nx_list::Vector{Int};
     params::Heat2Ph2DParams=Heat2Ph2DParams(),
@@ -196,7 +244,7 @@ function run_heat_2ph_2d(
     u2_exact = heat2d_phase2_solution(params)
     
     # Create output directory for cell data
-    cell_data_dir = joinpath(BENCH_ROOT, "results", "scalar", "diphasic", "extreme_regimes", "cell_data_shifted_large_He$(params.He)_Ratio$(params.Dg/params.Dl)")
+    cell_data_dir = joinpath(BENCH_ROOT, "results", "scalar", "diphasic", "extreme_regimes", "cell_data_shifted_large_He$(params.He)_Ratio$(params.Dg/params.Dl)_int")
     if save_cell_data_flag
         mkpath(cell_data_dir)
     end
@@ -206,8 +254,8 @@ function run_heat_2ph_2d(
         mesh = Penguin.Mesh((nx, ny), (params.lx, params.ly), (params.x0, params.y0))
         circle = (x, y, _=0) -> sqrt((x - params.center[1])^2 + (y - params.center[2])^2) - params.radius
         circle_c = (x, y, _=0) -> params.radius - sqrt((x - params.center[1])^2 + (y - params.center[2])^2)
-        capacity1 = Capacity(circle, mesh)
-        capacity2 = Capacity(circle_c, mesh)
+        capacity1 = Capacity(circle, mesh; compute_centroids=true)
+        capacity2 = Capacity(circle_c, mesh; compute_centroids=true)
         operator1 = DiffusionOps(capacity1)
         operator2 = DiffusionOps(capacity2)
 
@@ -260,6 +308,7 @@ function run_heat_2ph_2d(
         # Save cell data for this mesh
         if save_cell_data_flag
             save_cell_data(nx, solver, capacity1, capacity2, u1_exact, u2_exact, params, cell_data_dir)
+            save_interface_cell_data(nx, solver, capacity1, capacity2, operator1, operator2, params, cell_data_dir)
         end
     end
 
@@ -301,7 +350,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing, params::Heat2Ph2DParams=Heat2Ph2DParams())
-    nx_vals = isnothing(nx_list) ? [16, 32, 64, 128, 256, 512] : nx_list
+    nx_vals = isnothing(nx_list) ? [8, 16, 32, 64, 128, 256] : nx_list
     data = run_heat_2ph_2d(nx_vals; params=params)
     csv_info = write_convergence_csv("Heat_2ph_2D_phase_custom_He$(params.He)_Ratio$(params.Dg/params.Dl)", data; csv_path=csv_path)
     return (data = data, csv_path = csv_info.csv_path, table = csv_info.table)

@@ -69,6 +69,12 @@ function run_heat_benchmark_convergence(
     err_full_vals = Float64[]
     err_cut_vals = Float64[]
     err_empty_vals = Float64[]
+    trunc_lp_all = Float64[]
+    trunc_lp_full = Float64[]
+    trunc_lp_cut = Float64[]
+    trunc_linf_all = Float64[]
+    trunc_linf_full = Float64[]
+    trunc_linf_cut = Float64[]
     inside_cells = Int[]
     inside_cells_by_dim = Vector{Vector{Int}}()
 
@@ -100,6 +106,7 @@ function run_heat_benchmark_convergence(
 
         _, _, global_err, full_err, cut_err, empty_err =
             check_convergence(u_analytical, solver, capacity, norm)
+        trunc = truncation_error_norms(solver, capacity, u_analytical)
 
         push!(h_vals, min(lx / nx, ly / ny))
         push!(err_vals, global_err)
@@ -107,6 +114,12 @@ function run_heat_benchmark_convergence(
         push!(err_cut_vals, cut_err)
         push!(err_empty_vals, empty_err)
         push!(inside_cells, count_inside_cells(capacity))
+        push!(trunc_lp_all, trunc.lp_all)
+        push!(trunc_lp_full, trunc.lp_full)
+        push!(trunc_lp_cut, trunc.lp_cut)
+        push!(trunc_linf_all, trunc.linf_all)
+        push!(trunc_linf_full, trunc.linf_full)
+        push!(trunc_linf_cut, trunc.linf_cut)
         Δx = lx / nx
         Δy = ly / ny
         coverage_x = ceil(Int, 2 * radius / Δx)
@@ -120,9 +133,17 @@ function run_heat_benchmark_convergence(
         err_full_vals = err_full_vals,
         err_cut_vals = err_cut_vals,
         err_empty_vals = err_empty_vals,
+        trunc_lp_all = trunc_lp_all,
+        trunc_lp_full = trunc_lp_full,
+        trunc_lp_cut = trunc_lp_cut,
+        trunc_linf_all = trunc_linf_all,
+        trunc_linf_full = trunc_linf_full,
+        trunc_linf_cut = trunc_linf_cut,
         inside_cells = inside_cells,
         inside_cells_by_dim = inside_cells_by_dim,
         orders = compute_orders(h_vals, err_vals, err_full_vals, err_cut_vals),
+        trunc_orders_lp = compute_orders(h_vals, trunc_lp_all, trunc_lp_full, trunc_lp_cut),
+        trunc_orders_linf = compute_orders(h_vals, trunc_linf_all, trunc_linf_full, trunc_linf_cut),
         norm = norm
     )
 end
@@ -137,7 +158,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing)
-    nx_vals = isnothing(nx_list) ? [4, 8, 16, 32, 64, 128] : nx_list
+    nx_vals = isnothing(nx_list) ? [4, 8, 16, 32, 64, 128, 256] : nx_list
     ny_vals = nx_vals
     radius = 1.0
     center = (2.01, 2.01)
