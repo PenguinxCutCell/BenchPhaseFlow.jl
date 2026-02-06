@@ -48,6 +48,15 @@ Diphasic :
 
 # Updated results 
 
+Must do :
+- heat 3d robin ok
+- Diphasic 2d ok 
+- diphasic 3d
+- oscillating circle ok
+- multiples ellipses ok
+- expand sphere : in progress
+- diphasic vertical oscillating ok
+
 - Heat 3D Robin : Table 5 :
 method,h,lp_norm,inside_cells,inside_cells_by_dim,all_err,full_err,cut_err,empty_err,pair_order_all,pair_order_full,pair_order_cut
 Scalar_3D_Diffusion_Heat_Robin,2.0,L^2,0,[1, 1, 1],NaN,NaN,NaN,NaN,NaN,NaN,NaN
@@ -83,3 +92,16 @@ Scalar_2D_Diffusion_Heat_Moving,0.125,L^2,449,[26, 26],0.042743581999314405,0.03
 Scalar_2D_Diffusion_Heat_Moving,0.0625,L^2,1925,[51, 51],0.014166211099583187,0.013270378254190888,0.004957680698537497,0.0,1.593253867786749,1.516843297624715,1.9845186796073133
 Scalar_2D_Diffusion_Heat_Moving,0.03125,L^2,7909,[102, 102],0.005373822149176953,0.005320090050253638,0.0007580279336390103,0.0,1.3984334659233193,1.3186869226104048,2.7093424386596
 fit (all,full,cut) : (1.7935, 1.6176, 2.3209)
+
+- Mutliples ellipses moving : Table 13 : 
+method,h,lp_norm,inside_cells,inside_cells_by_dim,all_err,full_err,cut_err,empty_err,pair_order_all,pair_order_full,pair_order_cut
+JohansenColella_Moving_Dirichlet,0.5,L^2,0,[1, 1],NaN,NaN,NaN,NaN,NaN,NaN,NaN
+JohansenColella_Moving_Dirichlet,0.2222222222222222,L^2,0,[2, 2],0.002114456512118754,0.0,0.002114456512118754,0.0,NaN,NaN,NaN
+JohansenColella_Moving_Dirichlet,0.125,L^2,2,[4, 4],0.0017645756788149203,0.00039261715618771115,0.0017203427260090388,0.0,0.31438795749456916,NaN,0.3585108365798596
+JohansenColella_Moving_Dirichlet,0.06060606060606061,L^2,33,[7, 7],0.00024180037237862538,0.00020122930090927998,0.00013406785050117104,0.0,2.745546801596432,0.9232940009078924,3.525164220297699
+JohansenColella_Moving_Dirichlet,0.031746031746031744,L^2,151,[12, 12],7.7184711357751e-5,6.261489832376488e-5,4.5131520861632036e-5,0.0,1.7659497499278323,1.8054326813455626,1.6837602331606962
+JohansenColella_Moving_Dirichlet,0.015748031496062992,L^2,719,[24, 24],2.1746454275057748e-5,1.6616225947480735e-5,1.4028874110185941e-5,0.0,1.8069273391805336,1.8923316332423143,1.6667275331265081
+JohansenColella_Moving_Dirichlet,0.0078125,L^2,3131,[49, 49],6.5323712457044825e-6,4.32204612271124e-6,4.898141627685286e-6,0.0,1.7156879552379376,1.9210688700909122,1.5011073356304039
+,,,,,,,,,,,
+
+- Diphasic 2D moving vertical interface : Table 15, 16, 17 : Done cf csv prescribed_motion/...

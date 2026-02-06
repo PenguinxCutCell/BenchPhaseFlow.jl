@@ -31,7 +31,7 @@ struct Heat2Ph2DParams
     cl0::Float64
 end
 
-Heat2Ph2DParams(; lx=16.0, ly=16.0, x0=0.0, y0=0.0, center=(8.0+0.125/pi, 8.0+0.125*sqrt(3/2)),
+Heat2Ph2DParams(; lx=16.0, ly=16.0, x0=0.0, y0=0.0, center=(8.0, 8.0),
                 radius=1.0, Tend=3.0, Dg=17.416, Dl=0.17416, He=1/30.0,
                 cg0=1.0, cl0=0.0) =
     Heat2Ph2DParams(lx, ly, x0, y0, center, radius, Tend, Dg, Dl, He, cg0, cl0)
@@ -301,7 +301,7 @@ function write_convergence_csv(method_name, data; csv_path=nothing)
 end
 
 function main(; csv_path=nothing, nx_list=nothing, params::Heat2Ph2DParams=Heat2Ph2DParams())
-    nx_vals = isnothing(nx_list) ? [16, 32, 64, 128, 256, 512] : nx_list
+    nx_vals = isnothing(nx_list) ? [512] : nx_list
     data = run_heat_2ph_2d(nx_vals; params=params)
     csv_info = write_convergence_csv("Heat_2ph_2D_phase_custom_He$(params.He)_Ratio$(params.Dg/params.Dl)", data; csv_path=csv_path)
     return (data = data, csv_path = csv_info.csv_path, table = csv_info.table)
