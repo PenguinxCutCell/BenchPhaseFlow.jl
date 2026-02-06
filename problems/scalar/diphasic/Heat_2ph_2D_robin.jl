@@ -40,17 +40,17 @@ Heat2Ph2DRobinParams(; lx=8.0, ly=8.0, x0=0.0, y0=0.0, center=(4.0, 4.0),
 
 
 @inline function rfac(u, params::Heat2Ph2DRobinParams)
-    # A(u) = J0(uR) + (β/α) Dg u J1(uR)
+    # rfac = J0(uR) + (β/α) Dg u J1(uR)
     ρ = (params.beta / params.alpha) * params.Dg
     R = params.radius
-    return besselj0(u * R) + ρ * u * besselj1(u * R)
+    return besselj0(u * R) - ρ * u * besselj1(u * R)
 end
 
 phi_val(u, params::Heat2Ph2DRobinParams) = begin
     D = sqrt(params.Dg / params.Dl)
     R = params.radius
     term1 = params.Dg * sqrt(params.Dl) * besselj1(u * R) * bessely0(D * u * R)
-    term2 = params.He * params.Dl * sqrt(params.Dg) * rfac(u, params) * bessely1(D * u * R)
+    term2 = params.Dl * sqrt(params.Dg) * rfac(u, params) * bessely1(D * u * R)  # <-- no He
     term1 - term2
 end
 
@@ -58,47 +58,59 @@ psi_val(u, params::Heat2Ph2DRobinParams) = begin
     D = sqrt(params.Dg / params.Dl)
     R = params.radius
     term1 = params.Dg * sqrt(params.Dl) * besselj1(u * R) * besselj0(D * u * R)
-    term2 = params.He * params.Dl * sqrt(params.Dg) * rfac(u, params) * besselj1(D * u * R)
+    term2 = params.Dl * sqrt(params.Dg) * rfac(u, params) * besselj1(D * u * R)  # <-- no He
     term1 - term2
 end
 
 
 function cg_integrand(u, x, y, params::Heat2Ph2DRobinParams)
-    r = hypot(x - params.center[1], y - params.center[2])
+    r  = hypot(x - params.center[1], y - params.center[2])
+    R  = params.radius
+    D  = sqrt(params.Dg / params.Dl)
     Φu = phi_val(u, params)
     Ψu = psi_val(u, params)
-    denom = u^2 * (Φu^2 + Ψu^2)
-    numer = exp(-params.Dg * u^2 * params.Tend) * besselj0(u * r) * besselj1(u * params.radius)
+
+    denom = u * (Φu^2 + Ψu^2)
+    numBC = besselj1(D * u * R) * Φu - bessely1(D * u * R) * Ψu
+    numer = exp(-params.Dg * u^2 * params.Tend) * besselj0(u * r) * numBC
+
     iszero(denom) ? 0.0 : numer / denom
 end
 
 function cl_integrand(u, x, y, params::Heat2Ph2DRobinParams)
-    r = hypot(x - params.center[1], y - params.center[2])
+    r  = hypot(x - params.center[1], y - params.center[2])
+    R  = params.radius
+    D  = sqrt(params.Dg / params.Dl)
     Φu = phi_val(u, params)
     Ψu = psi_val(u, params)
-    D  = sqrt(params.Dg / params.Dl)
-    denom = u * (Φu^2 + Ψu^2)
+
+    denom   = u * (Φu^2 + Ψu^2)
     contrib = besselj0(D * u * r) * Φu - bessely0(D * u * r) * Ψu
-    numer = exp(-params.Dg * u^2 * params.Tend) * besselj1(u * params.radius) * contrib
+    numer   = exp(-params.Dg * u^2 * params.Tend) * besselj1(u * R) * contrib
+
     iszero(denom) ? 0.0 : numer / denom
 end
 
 function heat2d_phase1_solution(params::Heat2Ph2DRobinParams)
-    He = params.He
-    prefactor = (4 * params.cg0 * params.Dg * params.Dl^2 * He) / (π^2 * params.radius)
+    # gas-side solution (r < R)
+    δ = params.g_gamma / params.alpha - params.cg0
+    prefactor = 2 * δ * params.Dl * sqrt(params.Dg) / π
     Umax = 5.0 / sqrt(params.Dg * params.Tend)
+
     return (x, y) -> begin
         r = hypot(x - params.center[1], y - params.center[2])
         r >= params.radius && return 0.0
         val, _ = quadgk(u -> cg_integrand(u, x, y, params), 0, Umax; atol=1e-8, rtol=1e-8)
-        prefactor * val
+        params.cg0 + prefactor * val
     end
 end
 
 function heat2d_phase2_solution(params::Heat2Ph2DRobinParams)
-    He = params.He
-    prefactor = (2 * params.cg0 * params.Dg * sqrt(params.Dl) * He) / π
+    # liquid-side solution (r > R), tends to 0 at infinity (consistent with cl0=0)
+    δ = params.g_gamma / params.alpha - params.cg0
+    prefactor = 2 * δ * params.Dg * sqrt(params.Dl) / π
     Umax = 5.0 / sqrt(params.Dg * params.Tend)
+
     return (x, y) -> begin
         r = hypot(x - params.center[1], y - params.center[2])
         r < params.radius && return 0.0

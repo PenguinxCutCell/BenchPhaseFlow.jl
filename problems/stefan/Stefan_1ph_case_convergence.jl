@@ -84,7 +84,7 @@ function run_stefan_case_convergence(nx_list::Vector{Int};
         u0y = zeros(nx + 1)
         u0 = vcat(u0o, u0y)
 
-        solver = MovingLiquidDiffusionUnsteadyMono(fluid, bc_b, bc, dt, u0, mesh, "BE")
+        solver = MovingLiquidDiffusionUnsteadyMono(fluid, bc_b, bc, dt, Tstart, u0, mesh, "BE")
 
         solver, residuals, xf_log, timestep_history = solve_MovingLiquidDiffusionUnsteadyMono!(
             solver, fluid, xf0, dt, Tstart, Tend, bc_b, bc, stef_cond, mesh, "BE";
